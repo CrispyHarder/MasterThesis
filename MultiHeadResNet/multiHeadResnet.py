@@ -427,8 +427,11 @@ if __name__ == "__main__":
     from tensorboardX import SummaryWriter
     import torchvision
 
-    train_loader = DataLoader(CIFAR10("/gris/gris-f/homestud/charder/MasterThesis/..." + "CIFAR10", train=True, transform=Compose([RandomHorizontalFlip(), RandomCrop(32,4), ToTensor(), Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))]),download=True), batch_size=128, shuffle=True)
-    net = MultiHeadResNet([3,3,3], 5).cuda()
+    train_loader = DataLoader(CIFAR10(os.path.join('gris','gris-f','homestud','charder','MasterThesis','storage','data','CIFAR10'), 
+            train=True, transform=Compose([RandomHorizontalFlip(), RandomCrop(32,4), ToTensor(), 
+            Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))]),download=True), 
+            batch_size=128, shuffle=True)
+    net = MultiHeadResNet([3,3,3], 1).cuda()
     opt = torch.optim.Adam(net.parameters(), lr=0.001, weight_decay=2e-4)
     # loss = MulHCELossCosDistDet(0.5, 2.0, 0.5).cuda()
     loss = MHEnsembleLoss(net.num_heads, nn.CrossEntropyLoss(), LAMBDA=0.5, PHI=0).cuda()
