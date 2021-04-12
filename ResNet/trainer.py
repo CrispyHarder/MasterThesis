@@ -20,7 +20,11 @@ model_names = sorted(name for name in resnet.__dict__
 
 print(model_names)
 
+default_data_storage = os.path.join('storage','data')
+default_save_dir = os.path.join('storage','models','ResNet')
+
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
+parser.add_argument('--data_storage', default=default_data_storage)
 parser.add_argument('-device',default='cuda:0' )
 parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet32',
                     choices=model_names,
@@ -52,7 +56,7 @@ parser.add_argument('--half', dest='half', action='store_true',
                     help='use half-precision(16-bit) ')
 parser.add_argument('--save-dir', dest='save_dir',
                     help='The directory used to save the trained models',
-                    default='save_temp', type=str)
+                    default=default_save_dir, type=str)
 parser.add_argument('--save-every', dest='save_every',
                     help='Saves checkpoints at every specified number of epochs',
                     type=int, default=10)
@@ -93,8 +97,11 @@ def main():
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
+    # get the directory to store the data
+    data_storage = args.data_storage
+
     train_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(root='./data', train=True, transform=transforms.Compose([
+        datasets.CIFAR10(root=data_storage, train=True, transform=transforms.Compose([
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(32, 4),
             transforms.ToTensor(),
@@ -104,7 +111,7 @@ def main():
         num_workers=args.workers, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(root='./data', train=False, transform=transforms.Compose([
+        datasets.CIFAR10(root=data_storage, train=False, transform=transforms.Compose([
             transforms.ToTensor(),
             normalize,
         ])),
