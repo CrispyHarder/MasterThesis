@@ -27,6 +27,8 @@ Reference:
 If you use this implementation in you work, please don't forget to mention the
 author, Yerlan Idelbayev.
 '''
+import os 
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -424,7 +426,6 @@ if __name__ == "__main__":
     from torchvision.transforms import Compose, ToTensor, Normalize, RandomHorizontalFlip, RandomRotation, \
         RandomVerticalFlip, RandomCrop
     from torch.utils.data import DataLoader, Dataset
-    from tensorboardX import SummaryWriter
     import torchvision
 
     train_loader = DataLoader(CIFAR10(os.path.join('gris','gris-f','homestud','charder','MasterThesis','storage','data','CIFAR10'), 
