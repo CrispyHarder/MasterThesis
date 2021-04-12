@@ -25,7 +25,7 @@ default_save_dir = os.path.join('..','storage','models','ResNet')
 
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
 parser.add_argument('--data_storage', default=default_data_storage)
-parser.add_argument('-device',default='cuda:0' )
+parser.add_argument('-device',default="0")
 parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet32',
                     choices=model_names,
                     help='model architecture: ' + ' | '.join(model_names) +
@@ -68,8 +68,7 @@ def main():
     args = parser.parse_args()
 
     #set device
-    device_name = args.device
-    device = torch.device(device_name)
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.device
 
     # Check the save_dir exists or not
     if not os.path.exists(args.save_dir):
@@ -188,8 +187,8 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        target = target.to(device=device)
-        input_var = input.to(device=device)
+        target = target.cuda()
+        input_var = input.cuda()
         target_var = target
         if args.half:
             input_var = input_var.half()
@@ -238,9 +237,9 @@ def validate(val_loader, model, criterion, device):
     end = time.time()
     with torch.no_grad():
         for i, (input, target) in enumerate(val_loader):
-            target = target.to(device=device)
-            input_var = input.to(device=device)
-            target_var = target.to(device=device)
+            target = target.cuda()
+            input_var = input.cuda()
+            target_var = target.cuda()
 
             if args.half:
                 input_var = input_var.half()
