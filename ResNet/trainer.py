@@ -76,7 +76,7 @@ def main():
         os.makedirs(args.save_dir)
 
     model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
-    model.to(device=device)
+    model.cuda()
 
     # optionally resume from a checkpoint
     if args.resume:
@@ -119,7 +119,7 @@ def main():
         num_workers=args.workers, pin_memory=True)
 
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().to(device=device)
+    criterion = nn.CrossEntropyLoss().cuda()
 
     if args.half:
         model.half()
