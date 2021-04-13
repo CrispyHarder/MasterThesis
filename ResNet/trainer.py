@@ -67,6 +67,8 @@ def main():
     global args, best_prec1
     args = parser.parse_args()
 
+    logging_acc_path = 'logging_acc.txt'
+
     #set device
     print(args.device)
     os.environ["CUDA_VISIBLE_DEVICES"] = args.device
@@ -156,7 +158,10 @@ def main():
         # remember best prec@1 and save checkpoint
         is_best = prec1 > best_prec1
         best_prec1 = max(prec1, best_prec1)
-
+        with open(logging_acc_path,'a') as file:
+            file.write(prec1)
+            file.write(is_best)
+            file.write("\r")
         if epoch > 0 and epoch % args.save_every == 0:
             save_checkpoint({
                 'epoch': epoch + 1,
@@ -276,9 +281,10 @@ def validate(val_loader, model, criterion):
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     """
-    Save the training model
+    Save the training model if it has the best val performance
     """
-    torch.save(state, filename)
+    if is_best:
+        torch.save(state, filename)
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
