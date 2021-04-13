@@ -68,13 +68,14 @@ def main():
     args = parser.parse_args()
 
     #set device
+    print(args.device)
     os.environ["CUDA_VISIBLE_DEVICES"] = args.device
 
     # Check the save_dir exists or not
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
-    model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
+    model = resnet.__dict__[args.arch]()
     model.cuda()
 
     # optionally resume from a checkpoint
@@ -146,11 +147,11 @@ def main():
 
         # train for one epoch
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
-        train(train_loader, model, criterion, optimizer, epoch, device)
+        train(train_loader, model, criterion, optimizer, epoch)
         lr_scheduler.step()
 
         # evaluate on validation set
-        prec1 = validate(val_loader, model, criterion, device)
+        prec1 = validate(val_loader, model, criterion)
 
         # remember best prec@1 and save checkpoint
         is_best = prec1 > best_prec1
@@ -169,7 +170,7 @@ def main():
         }, is_best, filename=os.path.join(args.save_dir, 'model.th'))
 
 
-def train(train_loader, model, criterion, optimizer, epoch, device):
+def train(train_loader, model, criterion, optimizer, epoch):
     """
         Run one train epoch
     """
@@ -223,7 +224,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
                       data_time=data_time, loss=losses, top1=top1))
 
 
-def validate(val_loader, model, criterion, device):
+def validate(val_loader, model, criterion):
     """
     Run evaluation
     """
