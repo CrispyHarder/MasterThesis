@@ -180,7 +180,7 @@ def main():
                 epochs_wo_improvement += 1 
 
             #if early breaking condition is met, we end the training
-            if epochs_wo_improvement >= breaking_condition:
+            if epochs_wo_improvement >= breaking_condition and epochs > 150 + breaking_condition:
                 break
 
             if epoch > 0 and epoch % args.save_every == 0:
