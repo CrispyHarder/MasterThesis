@@ -74,20 +74,23 @@ def main():
     args = parser.parse_args()
 
     #set device
-    print(args.device)
+    print('Using GPU cuda {}'.format(args.device))
     os.environ["CUDA_VISIBLE_DEVICES"] = args.device
 
-    #get the number of runs 
+    #get the number of runs and number of already done runs  
     nr_runs = args.nr_runs
     runs_start_at = args.runs_start_at
-    #run nr_runs often and save the models in the specified placed
+
+    #run nr_runs often and save the models in the specified place
     for nr_run in range(runs_start_at,runs_start_at + nr_runs):
 
-        # Check if the save_dir exists or not
+        # Check if the save_dir for the run exists or not,
+        # path is save_dir/model_name(like resnet20)/run_ix
         save_dir_run = os.path.join(args.save_dir,args.arch,'run_{}'.format(nr_run))
         if not os.path.exists(args.save_dir_run):
             os.makedirs(args.save_dir_run)
 
+        # set the model, load and send to device
         model = resnet.__dict__[args.arch]()
         model.cuda()
 
@@ -104,6 +107,7 @@ def main():
             else:
                 print("=> no checkpoint found at '{}'".format(args.resume))
 
+        #dont know what this is doing
         cudnn.benchmark = True
         
         # params of moritz are: Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))
@@ -131,7 +135,7 @@ def main():
             batch_size=128, shuffle=False,
             num_workers=args.workers, pin_memory=True)
 
-        # define loss function (criterion) and optimizer
+        # define loss function (criterion) and optimizer and lr_scheduler
         criterion = nn.CrossEntropyLoss().cuda()
 
         if args.half:
@@ -156,7 +160,7 @@ def main():
             validate(val_loader, model, criterion, device)
             return
 
-        #get the number of epochs without improvement
+        #preperation in order to get the number of epochs without improvement
         epochs_wo_improvement = 0
         improvement_margin = args.improvement_margin
         breaking_condition = args.breaking_condition
@@ -179,7 +183,7 @@ def main():
             else:
                 epochs_wo_improvement += 1 
 
-            #if early breaking condition is met, we end the training
+            #if early breaking condition is met and we are after last lr change, we end the training
             if epochs_wo_improvement >= breaking_condition and epochs > 150 + breaking_condition:
                 break
 
