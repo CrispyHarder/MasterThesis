@@ -87,8 +87,8 @@ def main():
         # Check if the save_dir for the run exists or not,
         # path is save_dir/model_name(like resnet20)/run_ix
         save_dir_run = os.path.join(args.save_dir,args.arch,'run_{}'.format(nr_run))
-        if not os.path.exists(args.save_dir_run):
-            os.makedirs(args.save_dir_run)
+        if not os.path.exists(save_dir_run):
+            os.makedirs(save_dir_run)
 
         # set the model, load and send to device
         model = resnet.__dict__[args.arch]()
@@ -184,7 +184,7 @@ def main():
                 epochs_wo_improvement += 1 
 
             #if early breaking condition is met and we are after last lr change, we end the training
-            if epochs_wo_improvement >= breaking_condition and epochs > 150 + breaking_condition:
+            if epochs_wo_improvement >= breaking_condition and epoch > 150 + breaking_condition:
                 break
 
             if epoch > 0 and epoch % args.save_every == 0:
@@ -192,12 +192,12 @@ def main():
                     'epoch': epoch + 1,
                     'state_dict': model.state_dict(),
                     'best_prec1': best_prec1,
-                }, is_best,is_checkpoint = True, filename=os.path.join(args.save_dir_run, 'checkpoint.th'))
+                }, is_best,is_checkpoint = True, filename=os.path.join(save_dir_run, 'checkpoint.th'))
 
             save_checkpoint({
                 'state_dict': model.state_dict(),
                 'best_prec1': best_prec1,
-            }, is_best, is_checkpoint = False, filename=os.path.join(args.save_dir_run, 'model.th'))
+            }, is_best, is_checkpoint = False, filename=os.path.join(save_dir_run, 'model.th'))
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
