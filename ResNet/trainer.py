@@ -13,6 +13,8 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import resnet
 
+from torch.utils.tensorboard import SummaryWriter
+
 model_names = sorted(name for name in resnet.__dict__
     if name.islower() and not name.startswith("__")
                      and name.startswith("resnet")
@@ -90,6 +92,9 @@ def main():
         if not os.path.exists(save_dir_run):
             os.makedirs(save_dir_run)
 
+        #add a writer to log training results for tensorboard
+        writer = SummaryWriter(save_dir_run)
+
         # set the model, load and send to device
         model = resnet.__dict__[args.arch]()
         model.cuda()
@@ -110,9 +115,10 @@ def main():
         #dont know what this is doing
         cudnn.benchmark = True
         
+        # params of original code are: Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         # params of moritz are: Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))
-        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                        std=[0.229, 0.224, 0.225])
+        normalize = transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
+                                        std=(0.2023, 0.1994, 0.2010))
 
         # get the directory to store the data
         data_storage = args.data_storage
@@ -157,7 +163,7 @@ def main():
 
 
         if args.evaluate:
-            validate(val_loader, model, criterion, device)
+            _ , _ = validate(val_loader, model, criterion, device)
             return
 
         #preperation in order to get the number of epochs without improvement
@@ -169,16 +175,22 @@ def main():
 
             # train for one epoch
             print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
-            train(train_loader, model, criterion, optimizer, epoch)
+            prec1_train, loss_train = train(train_loader, model, criterion, optimizer, epoch)
             lr_scheduler.step()
 
             # evaluate on validation set
-            prec1 = validate(val_loader, model, criterion)
+            prec1_val, loss_val = validate(val_loader, model, criterion)
             
+            # log accuracy and loss for tensorboard
+            writer.add_scalar('train/loss',loss_train,epoch)
+            writer.add_scalar('train/accuracy',prec1_train,epoch)
+            writer.add_scalar('val/loss',loss_val,epoch)
+            writer.add_scalar('val/accuracy',prec1_val,epoch)
+
             # remember best prec@1 and save checkpoint
-            is_best = prec1 > best_prec1 + improvement_margin
+            is_best = prec1_val > best_prec1 + improvement_margin
             if is_best:
-                best_prec1 = max(prec1, best_prec1)
+                best_prec1 = max(prec1_val, best_prec1)
                 epochs_wo_improvement = 0
             else:
                 epochs_wo_improvement += 1 
@@ -198,6 +210,9 @@ def main():
                 'state_dict': model.state_dict(),
                 'best_prec1': best_prec1,
             }, is_best, is_checkpoint = False, filename=os.path.join(save_dir_run, 'model.th'))
+
+        # empty the cache of the writer
+        writer.flush()
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
@@ -252,6 +267,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
                       epoch, i, len(train_loader), batch_time=batch_time,
                       data_time=data_time, loss=losses, top1=top1))
+    
+    return top1.avg, loss.avg
 
 
 def validate(val_loader, model, criterion):
@@ -302,7 +319,7 @@ def validate(val_loader, model, criterion):
     print(' * Prec@1 {top1.avg:.3f}'
           .format(top1=top1))
 
-    return top1.avg
+    return top1.avg, loss.avg
 
 def save_checkpoint(state, is_best, is_checkpoint=True, filename='checkpoint.pth.tar'):
     """

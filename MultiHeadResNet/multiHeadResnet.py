@@ -426,6 +426,7 @@ if __name__ == "__main__":
     from torchvision.transforms import Compose, ToTensor, Normalize, RandomHorizontalFlip, RandomRotation, \
         RandomVerticalFlip, RandomCrop
     from torch.utils.data import DataLoader, Dataset
+    from tensorboardX import SummaryWriter
     import torchvision
 
     train_loader = DataLoader(CIFAR10(os.path.join('gris','gris-f','homestud','charder','MasterThesis','storage','data','CIFAR10'), 
