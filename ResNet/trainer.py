@@ -268,7 +268,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
                       epoch, i, len(train_loader), batch_time=batch_time,
                       data_time=data_time, loss=losses, top1=top1))
     
-    return top1.avg, loss.avg
+    return top1.avg, losses.avg
 
 
 def validate(val_loader, model, criterion):
@@ -319,7 +319,7 @@ def validate(val_loader, model, criterion):
     print(' * Prec@1 {top1.avg:.3f}'
           .format(top1=top1))
 
-    return top1.avg, loss.avg
+    return top1.avg, losses.avg
 
 def save_checkpoint(state, is_best, is_checkpoint=True, filename='checkpoint.pth.tar'):
     """
