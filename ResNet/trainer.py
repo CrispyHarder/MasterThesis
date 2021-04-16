@@ -115,8 +115,10 @@ def main():
         #dont know what this is doing
         cudnn.benchmark = True
         
-        # params of original code are: Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        # params of moritz are: Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))
+        # params of original code are: 
+        # Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        # params of moritz are: 
+        # Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))
         normalize = transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
                                         std=(0.2023, 0.1994, 0.2010))
 
