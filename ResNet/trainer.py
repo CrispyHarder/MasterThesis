@@ -160,7 +160,7 @@ def main():
         # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
         #                        milestones=[100, 150], last_epoch=args.start_epoch - 1)
         lr_scheduler = torch.optim.lr_scheduler.MultistepMultiGammaLR(optimizer,
-                            milestones=[100, 150], gamma=[0.5,0.2],last_epoch=args.start_epoch - 1)
+                            milestones=[80,120], gamma=[0.5,0.2],last_epoch=args.start_epoch - 1)
 
         if args.arch in ['resnet1202', 'resnet110']:
             # for resnet1202 original paper uses lr=0.01 for first 400 minibatches for warm-up
