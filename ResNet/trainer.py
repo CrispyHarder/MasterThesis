@@ -13,6 +13,8 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import resnet
 
+from multistep_multigamma_lr import MultistepMultiGammaLR
+
 from torch.utils.tensorboard import SummaryWriter
 
 model_names = sorted(name for name in resnet.__dict__
@@ -154,8 +156,11 @@ def main():
                                     momentum=args.momentum,
                                     weight_decay=args.weight_decay)
 
-        lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
-                                milestones=[100, 150], last_epoch=args.start_epoch - 1)
+        #use own lr_scheduler
+        # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
+        #                        milestones=[100, 150], last_epoch=args.start_epoch - 1)
+        lr_scheduler = torch.optim.lr_scheduler.MultistepMultiGammaLR(optimizer,
+                            milestones=[100, 150], gamma=[0.5,0.2],last_epoch=args.start_epoch - 1)
 
         if args.arch in ['resnet1202', 'resnet110']:
             # for resnet1202 original paper uses lr=0.01 for first 400 minibatches for warm-up
