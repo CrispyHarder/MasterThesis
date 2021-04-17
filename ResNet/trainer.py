@@ -15,10 +15,6 @@ from multistep_multigamma_lr import MultistepMultiGammaLR
 from util.during_training import get_lr
 import resnet
 
-
-
-
-
 model_names = sorted(name for name in resnet.__dict__
     if name.islower() and not name.startswith("__")
                      and name.startswith("resnet")
