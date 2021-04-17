@@ -1,6 +1,5 @@
 import argparse
 import os
-import shutil
 import time
 
 import torch
@@ -11,11 +10,14 @@ import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+from torch.utils.tensorboard import SummaryWriter
+from multistep_multigamma_lr import MultistepMultiGammaLR
+from util.during_training import get_lr
 import resnet
 
-from multistep_multigamma_lr import MultistepMultiGammaLR
 
-from torch.utils.tensorboard import SummaryWriter
+
+
 
 model_names = sorted(name for name in resnet.__dict__
     if name.islower() and not name.startswith("__")
@@ -36,7 +38,7 @@ parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet32',
                     ' (default: resnet32)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=200, type=int, metavar='N',
+parser.add_argument('--epochs', default=120, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
@@ -159,8 +161,8 @@ def main():
         #use own lr_scheduler
         # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
         #                        milestones=[100, 150], last_epoch=args.start_epoch - 1)
-        lr_scheduler = torch.optim.lr_scheduler.MultistepMultiGammaLR(optimizer,
-                            milestones=[100, 150], gamma=[0.5,0.2],last_epoch=args.start_epoch - 1)
+        lr_scheduler = MultistepMultiGammaLR(optimizer, milestones=[80,100], 
+                                    gamma=[0.5,0.2],last_epoch=args.start_epoch - 1)
 
         if args.arch in ['resnet1202', 'resnet110']:
             # for resnet1202 original paper uses lr=0.01 for first 400 minibatches for warm-up
@@ -179,6 +181,9 @@ def main():
         breaking_condition = args.breaking_condition
 
         for epoch in range(args.start_epoch, args.epochs):
+            
+            #get the learning rate of the optimizer
+            learning_rate = get_lr(optimizer)
 
             # train for one epoch
             print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
@@ -193,6 +198,7 @@ def main():
             writer.add_scalar('train/accuracy',prec1_train,epoch)
             writer.add_scalar('val/loss',loss_val,epoch)
             writer.add_scalar('val/accuracy',prec1_val,epoch)
+            writer.add_scalar('learning_rate',learning_rate,epoch)
 
             # remember best prec@1 and save checkpoint
             is_best = prec1_val > best_prec1 + improvement_margin
