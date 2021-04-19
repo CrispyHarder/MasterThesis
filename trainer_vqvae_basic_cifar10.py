@@ -74,7 +74,8 @@ parser.add_argument('--num_embeddings', default=512, type=int,
 
 
 # saving data,model states and results 
-parser.add_argument('--data_storage', default=default_data_storage)
+parser.add_argument('--data_storage', default=default_data_storage,
+                    help='where the train/val/test data is saved')
 parser.add_argument('--save-every', dest='save_every',
                     help='Saves checkpoints at every specified number of epochs',
                     type=int, default=10)
@@ -124,14 +125,14 @@ def main():
               args.commitment_cost, args.decay).cuda()
 
         # load train data 
-        training_data = datasets.CIFAR10(root="data", train=True, download=True,
+        training_data = datasets.CIFAR10(root=args.data_storage, train=True, download=True,
                                         transform=transforms.Compose([
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
                                                 std=(0.2023, 0.1994, 0.2010))
                                         ]))
 
-        validation_data = datasets.CIFAR10(root="data", train=False, download=True,
+        validation_data = datasets.CIFAR10(root=args.data_storage, train=False, download=True,
                                         transform=transforms.Compose([
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
