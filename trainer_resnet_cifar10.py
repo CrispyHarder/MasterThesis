@@ -11,6 +11,8 @@ import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.tensorboard import SummaryWriter
+from util.saving import save_checkpoint
+from util.average_meter import AverageMeter
 from util.learning_rates import MultistepMultiGammaLR
 from util.learning_rates import get_lr
 from ResNet import resnet
@@ -176,7 +178,7 @@ def main():
         improvement_margin = args.improvement_margin
         breaking_condition = args.breaking_condition
 
-        for epoch in range(args.start_epoch, args.epochs):
+        for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
             
             #get the learning rate of the optimizer
             learning_rate = get_lr(optimizer)
@@ -329,34 +331,6 @@ def validate(val_loader, model, criterion):
           .format(top1=top1))
 
     return top1.avg, losses.avg
-
-def save_checkpoint(state, is_best, is_checkpoint=True, filename='checkpoint.pth.tar'):
-    """
-    Save the training model if it has the best val performance
-    """
-    if is_checkpoint:
-        torch.save(state, filename)
-    else:
-        if is_best:
-            torch.save(state, filename)
-
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
