@@ -3,7 +3,7 @@ from __future__ import print_function
 import os
 import argparse
 import time
-
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -150,18 +150,30 @@ def main():
                                     num_workers=args.num_workers,
                                     pin_memory=True)
 
-        
+        train_data_variance = np.var(training_data.data / 255.0)
+        val_data_variance = np.var(validation_data.data / 255.0)
 
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
+        # save the hyperparams using the writer
+        writer.add_hparams({'batch_size':args.batch_size,
+                            'lr':args.learning_rate,
+                            'commitment_cost':args.commitment_cost,
+                            'decay':args.decay,
+                            'model':args.arch,
+                            'num_hiddens':args.num_hiddens,
+                            'num_residual_hiddens':args.num_residual_hiddens,
+                            'num_residual_layers':args.num_residual_layers,
+                            'embedding_dim':args.embedding_dim,
+                            'num_embeddings':args.num_embeddings},{})
         for epoch in range (args.start_epoch, args.start_epoch+args.epochs):
             
             # perform training for one epoch
-            loss, recon_loss, vq_loss, perplexity = train_epoch(training_loader,model,optimizer, epoch)
+            loss, recon_loss, vq_loss, perplexity = train_epoch(training_loader,train_data_variance,model,optimizer, epoch)
 
             # compute on validation split
-            val_loss, val_recon_loss, val_vq_loss, val_perplexity, data_recon = validation(validation_loader, model)
+            val_loss, val_recon_loss, val_vq_loss, val_perplexity, data_input, data_recon = validation(validation_loader,val_data_variance, model)
 
             # log the scalar valuese
             writer.add_scalar('train/loss',loss,epoch)
@@ -176,7 +188,7 @@ def main():
 
             # log the reconstructed images
             writer.add_images('val/img_recon', data_recon, epoch)
-
+            writer.add_images('val/img_orig', data_input, epoch)
             if epoch > 0 and epoch % args.save_every == 0:
                 save_checkpoint({
                     'epoch': epoch + 1,
@@ -190,7 +202,7 @@ def main():
         # empty the cache of the writer into the directory 
         writer.flush()
 
-def train_epoch(train_loader, model, optimizer, epoch):
+def train_epoch(train_loader, data_variance,model, optimizer, epoch):
     """
         Run one train epoch
     """
@@ -214,7 +226,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
         optimizer.zero_grad()
 
         vq_loss, data_recon, perplexity = model(data)
-        recon_loss = F.mse_loss(data_recon, data)
+        recon_loss = F.mse_loss(data_recon, data)/data_variance
         loss = recon_loss + vq_loss
         loss.backward()
 
@@ -247,7 +259,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
     return losses.avg, recon_losses.avg, vq_losses.avg, perplexities.avg
 
 
-def validation(val_loader,model):
+def validation(val_loader,data_variance,model):
     """
     Run evaluation
     """
@@ -268,7 +280,7 @@ def validation(val_loader,model):
 
             # compute output
             vq_loss, data_recon, perplexity = model(data)
-            recon_loss = F.mse_loss(data_recon, data)
+            recon_loss = F.mse_loss(data_recon, data)/data_variance
             loss = recon_loss + vq_loss
 
             loss = loss.float()
@@ -297,13 +309,14 @@ def validation(val_loader,model):
             # take the images of the first validation batch and also return them 
             # for visual inspection
             if i == 0:
+                data_input = data.data
                 data_recon = data_recon.data
                 data_recon_return = data_recon
 
     print(' * Loss {loss.avg:.3f}'
           .format(loss=losses))
 
-    return losses.avg, recon_losses.avg, vq_losses.avg, perplexities.avg, data_recon_return
+    return losses.avg, recon_losses.avg, vq_losses.avg, perplexities.avg, data_input, data_recon_return 
 
 if __name__ == '__main__':
     main()
