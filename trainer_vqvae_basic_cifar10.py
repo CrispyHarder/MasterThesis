@@ -44,7 +44,7 @@ parser.add_argument('-b', '--batch-size', default=128, type=int,
                     metavar='N', help='mini-batch size (default: 128)')
 
 # optimizer configuration/ loss function specifics
-parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float,
+parser.add_argument('--lr', '--learning_rate', default=1e-3, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--commitment_cost', default=0.25, type=float,
                     help='momentum')
