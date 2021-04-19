@@ -24,8 +24,8 @@ model_names = sorted(name for name in resnet.__dict__
 
 print(model_names)
 
-default_data_storage = os.path.join('..','storage','data')
-default_save_dir = os.path.join('..','storage','models','ResNet')
+default_data_storage = os.path.join('storage','data')
+default_save_dir = os.path.join('storage','models','ResNet')
 
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
 parser.add_argument('--data_storage', default=default_data_storage)
