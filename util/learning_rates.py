@@ -29,7 +29,7 @@ class MultistepMultiGammaLR(_LRScheduler):
         verbose (bool): If ``True``, prints a message to stdout for
             each update. Default: ``False``.
 
-    Example:
+    Example: with same gamma every time 
         >>> # Assuming optimizer uses lr = 0.05 for all groups
         >>> # lr = 0.05     if epoch < 30
         >>> # lr = 0.005    if 30 <= epoch < 80
