@@ -50,7 +50,9 @@ parser.add_argument('--commitment_cost', default=0.25, type=float,
                     help='momentum')
 parser.add_argument('--decay', default=0.99, type=float,
                     help='''decay (default: 0.99) for the moving ) 
-                    average update of embeddings''')
+                    average update of embeddings. If decay is used, 
+                    the EMA vq model is used instead of the standart one 
+                    from the paper''')
 
 # Model architecture
 parser.add_argument('--arch', default='basic_model', type=str,
@@ -186,7 +188,7 @@ def main():
                 'state_dict': model.state_dict()
             }, is_checkpoint = False, filename=os.path.join(save_dir_run, 'model.th'))
 
-        # empty the cache of the writer
+        # empty the cache of the writer into the directory 
         writer.flush()
 
 def train_epoch(train_loader, model, optimizer, epoch):
