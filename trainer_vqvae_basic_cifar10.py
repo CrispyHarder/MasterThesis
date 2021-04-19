@@ -4,8 +4,6 @@ import os
 import argparse
 import time
 
-# import umap
-
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -44,7 +42,7 @@ parser.add_argument('-b', '--batch-size', default=128, type=int,
                     metavar='N', help='mini-batch size (default: 128)')
 
 # optimizer configuration/ loss function specifics
-parser.add_argument('--lr', '--learning_rate', default=1e-3, type=float,
+parser.add_argument('-lr', '--learning_rate', default=1e-3, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--commitment_cost', default=0.25, type=float,
                     help='momentum')
@@ -299,7 +297,7 @@ def validation(val_loader,model):
             # take the images of the first validation batch and also return them 
             # for visual inspection
             if i == 0:
-                data_recon = data_recon.float().item()
+                data_recon = data_recon.data
                 data_recon_return = data_recon
 
     print(' * Loss {loss.avg:.3f}'
