@@ -21,8 +21,8 @@ from util.average_meter import AverageMeter
 from util.saving import save_checkpoint
 
 
-default_data_storage = os.path.join('..','storage','data')
-default_save_dir = os.path.join('..','storage','models','VQVAE')
+default_data_storage = os.path.join('storage','data')
+default_save_dir = os.path.join('storage','models','VQVAE')
 
 parser = argparse.ArgumentParser(description='VQ-VAE for CIFAR10 in pytorch')
 
