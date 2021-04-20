@@ -105,6 +105,43 @@ def main():
     nr_runs = args.nr_runs
     runs_start_at = args.runs_start_at
 
+    # load train data 
+    # Moritz values for normaisation: mean=(0.4914, 0.4822, 0.4465),std=(0.2023, 0.1994, 0.2010)
+    # normalisation here is only to scale images to [-0.5,0.5] 
+    training_data = datasets.CIFAR10(root=args.data_storage, train=True, download=True,
+                                    transform=transforms.Compose([
+                                        transforms.ToTensor(),
+                                        transforms.Normalize(mean=(0.5,0.5,0.5),
+                                            std=(1,1,1))
+                                    ]))
+
+    validation_data = datasets.CIFAR10(root=args.data_storage, train=False, download=True,
+                                    transform=transforms.Compose([
+                                        transforms.ToTensor(),
+                                        transforms.Normalize(mean=(0.5,0.5,0.5),
+                                            std=(1,1,1))
+                                    ]))
+
+    # put train data into DataLoader
+    training_loader = DataLoader(training_data, 
+                                batch_size=args.batch_size, 
+                                shuffle=True,
+                                num_workers=args.num_workers,
+                                pin_memory=True)
+
+    validation_loader = DataLoader(validation_data,
+                                batch_size=32,
+                                shuffle=True,
+                                num_workers=args.num_workers,
+                                pin_memory=True)
+
+    #to use in loss 
+    global train_data_variance
+    global val_data_variance
+    train_data_variance = np.var(training_data.data / 255.0)
+    val_data_variance = np.var(validation_data.data / 255.0)
+
+
     #run nr_runs often and save the models in the specified place
     for nr_run in range(runs_start_at,runs_start_at + nr_runs):
 
@@ -121,37 +158,6 @@ def main():
         model = Model(args.num_hiddens, args.num_residual_layers, args.num_residual_hiddens,
               args.num_embeddings, args.embedding_dim, 
               args.commitment_cost, args.decay).cuda()
-
-        # load train data 
-        training_data = datasets.CIFAR10(root=args.data_storage, train=True, download=True,
-                                        transform=transforms.Compose([
-                                            transforms.ToTensor(),
-                                            transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
-                                                std=(0.2023, 0.1994, 0.2010))
-                                        ]))
-
-        validation_data = datasets.CIFAR10(root=args.data_storage, train=False, download=True,
-                                        transform=transforms.Compose([
-                                            transforms.ToTensor(),
-                                            transforms.Normalize(mean=(0.4914, 0.4822, 0.4465),
-                                                std=(0.2023, 0.1994, 0.2010))
-                                        ]))
-
-        # put train data into DataLoader
-        training_loader = DataLoader(training_data, 
-                                    batch_size=args.batch_size, 
-                                    shuffle=True,
-                                    num_workers=args.num_workers,
-                                    pin_memory=True)
-
-        validation_loader = DataLoader(validation_data,
-                                    batch_size=32,
-                                    shuffle=True,
-                                    num_workers=args.num_workers,
-                                    pin_memory=True)
-
-        train_data_variance = np.var(training_data.data / 255.0)
-        val_data_variance = np.var(validation_data.data / 255.0)
 
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
@@ -170,10 +176,10 @@ def main():
         for epoch in range (args.start_epoch, args.start_epoch+args.epochs):
             
             # perform training for one epoch
-            loss, recon_loss, vq_loss, perplexity = train_epoch(training_loader,train_data_variance,model,optimizer, epoch)
+            loss, recon_loss, vq_loss, perplexity = train_epoch(training_loader,model,optimizer, epoch)
 
             # compute on validation split
-            val_loss, val_recon_loss, val_vq_loss, val_perplexity, data_input, data_recon = validation(validation_loader,val_data_variance, model)
+            val_loss, val_recon_loss, val_vq_loss, val_perplexity, data_input, data_recon = validation(validation_loader, model)
 
             # log the scalar valuese
             writer.add_scalar('train/loss',loss,epoch)
@@ -186,9 +192,10 @@ def main():
             writer.add_scalar('val/loss_vq',val_vq_loss,epoch)
             writer.add_scalar('val/perplexity',val_perplexity,epoch)
 
-            # log the reconstructed images
-            writer.add_images('val/img_recon', data_recon, epoch)
-            writer.add_images('val/img_orig', data_input, epoch)
+            # log the reconstructed images (add 0.5 to get image into right range)
+            writer.add_images('val/img_recon', data_recon+0.5, epoch)
+            writer.add_images('val/img_orig', data_input+0.5, epoch)
+
             if epoch > 0 and epoch % args.save_every == 0:
                 save_checkpoint({
                     'epoch': epoch + 1,
@@ -202,10 +209,12 @@ def main():
         # empty the cache of the writer into the directory 
         writer.flush()
 
-def train_epoch(train_loader, data_variance,model, optimizer, epoch):
+def train_epoch(train_loader,model, optimizer, epoch):
     """
         Run one train epoch
     """
+    global train_data_variance
+
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -226,7 +235,7 @@ def train_epoch(train_loader, data_variance,model, optimizer, epoch):
         optimizer.zero_grad()
 
         vq_loss, data_recon, perplexity = model(data)
-        recon_loss = F.mse_loss(data_recon, data)/data_variance
+        recon_loss = F.mse_loss(data_recon, data)/train_data_variance
         loss = recon_loss + vq_loss
         loss.backward()
 
@@ -259,10 +268,12 @@ def train_epoch(train_loader, data_variance,model, optimizer, epoch):
     return losses.avg, recon_losses.avg, vq_losses.avg, perplexities.avg
 
 
-def validation(val_loader,data_variance,model):
+def validation(val_loader,model):
     """
     Run evaluation
     """
+    global val_data_variance
+
     batch_time = AverageMeter()
     losses = AverageMeter()
     recon_losses = AverageMeter()
@@ -280,7 +291,7 @@ def validation(val_loader,data_variance,model):
 
             # compute output
             vq_loss, data_recon, perplexity = model(data)
-            recon_loss = F.mse_loss(data_recon, data)/data_variance
+            recon_loss = F.mse_loss(data_recon, data)/val_data_variance
             loss = recon_loss + vq_loss
 
             loss = loss.float()
