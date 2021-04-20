@@ -162,17 +162,6 @@ def main():
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
-        # save the hyperparams using the writer
-        writer.add_hparams({'batch_size':args.batch_size,
-                            'lr':args.learning_rate,
-                            'commitment_cost':args.commitment_cost,
-                            'decay':args.decay,
-                            'model':args.arch,
-                            'num_hiddens':args.num_hiddens,
-                            'num_residual_hiddens':args.num_residual_hiddens,
-                            'num_residual_layers':args.num_residual_layers,
-                            'embedding_dim':args.embedding_dim,
-                            'num_embeddings':args.num_embeddings},{})
         for epoch in range (args.start_epoch, args.start_epoch+args.epochs):
             
             # perform training for one epoch
@@ -205,7 +194,23 @@ def main():
             save_checkpoint({
                 'state_dict': model.state_dict()
             }, is_checkpoint = False, filename=os.path.join(save_dir_run, 'model.th'))
-
+        
+        # save the hyperparams using the writer
+        writer.add_hparams({'batch_size':args.batch_size,
+                            'lr':args.learning_rate,
+                            'commitment_cost':args.commitment_cost,
+                            'decay':args.decay,
+                            'model':args.arch,
+                            'num_hiddens':args.num_hiddens,
+                            'num_residual_hiddens':args.num_residual_hiddens,
+                            'num_residual_layers':args.num_residual_layers,
+                            'embedding_dim':args.embedding_dim,
+                            'num_embeddings':args.num_embeddings,
+                            'nr_run':nr_run},
+                            {'val_loss':val_loss,
+                            'va_loss_recon':val_recon_loss,
+                            'val_loss_vq':val_vq_loss,
+                            'end_perplexity':val_perplexity})
         # empty the cache of the writer into the directory 
         writer.flush()
 
