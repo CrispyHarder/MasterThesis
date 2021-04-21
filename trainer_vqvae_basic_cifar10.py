@@ -40,8 +40,8 @@ parser.add_argument('-j', '--num_workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('-b', '--batch-size', default=128, type=int,
                     metavar='N', help='mini-batch size (default: 128)')
-parser.add_argument('--verbose', default=True, type=bool,
-                    help='whether the training and validation results should be printed out')
+parser.add_argument('--not_verbose', default=False, action='store_true',
+                    help='If switch is activated, no performance outputs are printed')
                     
 # optimizer configuration/ loss function specifics
 parser.add_argument('-lr', '--learning_rate', default=1e-3, type=float,
@@ -271,7 +271,7 @@ def train_epoch(train_loader,model, optimizer, epoch):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if i % args.print_freq == 0 and args.verbose:
+        if i % args.print_freq == 0 and not args.not_verbose:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
@@ -324,7 +324,7 @@ def validation(val_loader,model):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if i % args.print_freq == 0 and args.verbose:
+            if i % args.print_freq == 0 and not args.not_verbose:
                 print('Test: [{0}/{1}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
@@ -339,7 +339,7 @@ def validation(val_loader,model):
                 data_recon = data_recon.data
                 data_recon_return = data_recon
 
-    if args.verbose:
+    if not args.not_verbose:
         print(' * Loss {loss.avg:.3f}'
           .format(loss=losses))
 
