@@ -64,4 +64,4 @@ class VectorQuantizationStraightThrough(Function):
 
 vq = VectorQuantization.apply
 vq_st = VectorQuantizationStraightThrough.apply
-__all__ = [vq, vq_st]
+__all__ = ['vq', 'vq_st']
