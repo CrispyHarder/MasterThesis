@@ -40,7 +40,9 @@ parser.add_argument('-j', '--num_workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('-b', '--batch-size', default=128, type=int,
                     metavar='N', help='mini-batch size (default: 128)')
-
+parser.add_argument('--verbose', default=True, type=bool,
+                    help='whether the training and validation results should be printed out')
+                    
 # optimizer configuration/ loss function specifics
 parser.add_argument('-lr', '--learning_rate', default=1e-3, type=float,
                     metavar='LR', help='initial learning rate')
@@ -163,7 +165,8 @@ def main():
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
         for epoch in range (args.start_epoch, args.start_epoch+args.epochs):
-            
+            best_loss = 1000
+
             # perform training for one epoch
             loss, recon_loss, vq_loss, perplexity = train_epoch(training_loader,model,optimizer, epoch)
 
@@ -189,12 +192,17 @@ def main():
                 save_checkpoint({
                     'epoch': epoch + 1,
                     'state_dict': model.state_dict()
-                }, is_checkpoint = True, filename=os.path.join(save_dir_run, 'checkpoint.th'))
+                }, is_checkpoint = True, filename=os.path.join(save_dir_run, 'checkpoint_{}.th'.format(epoch+1)))
 
-            save_checkpoint({
-                'state_dict': model.state_dict()
-            }, is_checkpoint = False, filename=os.path.join(save_dir_run, 'model.th'))
-        
+            if val_loss < best_loss:
+                best_loss = val_loss
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'state_dict': model.state_dict()
+                }, is_checkpoint = False, is_best = True, filename=os.path.join(save_dir_run, 'model.th'))
+
+            print("Run nr {}, epoch {} finished training".format(nr_run,epoch), end="\r")
+
         # save the hyperparams using the writer
         writer.add_hparams({'batch_size':args.batch_size,
                             'lr':args.learning_rate,
@@ -207,13 +215,15 @@ def main():
                             'embedding_dim':args.embedding_dim,
                             'num_embeddings':args.num_embeddings,
                             'nr_run':nr_run},
-                            {'val_loss':val_loss,
+                            {'best_val_loss':best_loss,
+                            'val_loss':val_loss,
                             'va_loss_recon':val_recon_loss,
                             'val_loss_vq':val_vq_loss,
                             'end_perplexity':val_perplexity})
         # empty the cache of the writer into the directory 
         writer.flush()
-
+    print("Finished Training ")
+    
 def train_epoch(train_loader,model, optimizer, epoch):
     """
         Run one train epoch
@@ -261,7 +271,7 @@ def train_epoch(train_loader,model, optimizer, epoch):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if i % args.print_freq == 0:
+        if i % args.print_freq == 0 and args.verbose:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
@@ -314,7 +324,7 @@ def validation(val_loader,model):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if i % args.print_freq == 0:
+            if i % args.print_freq == 0 and args.verbose:
                 print('Test: [{0}/{1}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
@@ -329,7 +339,8 @@ def validation(val_loader,model):
                 data_recon = data_recon.data
                 data_recon_return = data_recon
 
-    print(' * Loss {loss.avg:.3f}'
+    if args.verbose:
+        print(' * Loss {loss.avg:.3f}'
           .format(loss=losses))
 
     return losses.avg, recon_losses.avg, vq_losses.avg, perplexities.avg, data_input, data_recon_return 
