@@ -9,3 +9,8 @@ def save_checkpoint(state, is_best=True, is_checkpoint=True, filename='checkpoin
     else:
         if is_best:
             torch.save(state, filename)
+
+def get_state_dict_from_checkpoint(checkpoint_path):
+    '''loads the state dict from a given checkpoint path'''
+    checkpoint = torch.load(checkpoint_path)
+    return checkpoint['state_dict']
