@@ -18,13 +18,15 @@ def get_matrix_of_models(list_to_checkpoints, model_type, comparison_function, *
         
     Returns(nd.array): A symmetric matrix containing the output values for every tupel '''
     n_models = len(list_to_checkpoints)
-    matrix = np.zeros(n_models,n_models)
+    matrix = np.zeros((n_models,n_models))
     list_models = []
 
     #load the models
     for i in range(n_models):
         model = resnet.__dict__[model_type]()
         model.load_state_dict(get_state_dict_from_checkpoint(list_to_checkpoints[i]))
+        if torch.cuda.is_available():
+            model.cuda()  
         list_models.append(model)
     
     #compute the matrix
