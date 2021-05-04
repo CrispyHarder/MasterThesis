@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt 
 import seaborn as sns 
-import math
 import numpy as np
 
 def plot_matrix_as_heatmap(cos_sim_matrix,show=False,title='',xlabel='',ylabel='',save_path=''):
