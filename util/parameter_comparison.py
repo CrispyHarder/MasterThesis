@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np 
 from ResNet import resnet # pylint: disable=import-error
 from util.saving import get_state_dict_from_checkpoint # pylint: disable=import-error
-from util.postprocessing import get_prediction # pylint: disable=import-error
+from util.inference import get_prediction # pylint: disable=import-error
 from util.average_meter import AverageMeter # pylint: disable=import-error
 
 def get_matrix_of_models(list_to_checkpoints, model_type, comparison_function, **kwargs):
