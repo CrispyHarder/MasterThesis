@@ -3,7 +3,7 @@ import seaborn as sns
 import math
 import numpy as np
 
-def plot_cosine_similarity(cos_sim_matrix,show=False,title='',xlabel='',ylabel='',save_path=''):
+def plot_matrix_as_heatmap(cos_sim_matrix,show=False,title='',xlabel='',ylabel='',save_path=''):
     '''plots the cosine similariy matrix of a number of models
     or model configurations'''
     n = np.shape(np.array(cos_sim_matrix))[0]
