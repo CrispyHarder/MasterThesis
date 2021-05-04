@@ -64,11 +64,12 @@ def prediction_agreement(model_0,model_1,dataloader,task):
     Returns(float): The prediction disagreement of the two models over the dataloader'''
     agreement = AverageMeter()
 
-    for i,(img,_) in enumerate(dataloader):
-        if i > 10:
-            return agreement.avg
+    for _,(img,_) in enumerate(dataloader):
         if task == 'class':
             len_batch = len(img)
+
+            if torch.cuda.is_available():
+                img = img.cuda()
 
             # get predictions
             pred_0 = get_prediction(img,model_0,task)
