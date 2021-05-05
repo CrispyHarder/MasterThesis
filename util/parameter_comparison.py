@@ -48,47 +48,62 @@ def cosine_sim_model_params(model_0,model_1):
     params_1 = get_flattened_params(model_1)
     return F.cosine_similarity(params_0,params_1,dim=0)
 
-def prediction_agreement(model_0,model_1,dataloader,task):
-    '''computes the prediction disagreement for two models
+def prediction_agreement(pred_0,pred_1,task):
+    '''computes the prediction disagreement between two prediction tensors
     Args:
-        model_0(nn.Module): One of the models to compare
-        model_1(nn.Module): The other model to compare 
-        dataloader(dataloader): The dataloader over which is iterated and on who the 
-            predictions are computed and compared
+        pred_0(torch.tensor): One of the models to compare
+        pred_1(torch.tessor): The other model to compare 
         task(str): either 'class' or 'seg'. The task dictates
             how exactly the disagreement is computed
     
-    Returns(float): The prediction disagreement of the two models over the dataloader'''
-    agreement = AverageMeter()
+    Returns(float): The prediction agreement of the two tensors'''
 
-    for _,(img,_) in enumerate(dataloader):
-        if task == 'class':
-            len_batch = len(img)
+    if task == 'class':
+        len_pred = len(pred_0)
 
-            if torch.cuda.is_available():
-                img = img.cuda()
+        # get number of same predictions and then percentage
+        same_pred = pred_0.eq(pred_1).float().sum(0)
+        agree_percentage = same_pred/len_pred
 
-            # get predictions
-            pred_0 = get_prediction(img,model_0,task)
-            pred_1 = get_prediction(img,model_1,task)
+    if task == 'seg':
+        # prob compute dice score of both pred
+        raise NotImplementedError
+    return agree_percentage
 
-            # get number of same predictions and then percentage
-            same_pred = pred_0.eq(pred_1).float().sum(0)
-            agree_percentage = same_pred/len_batch
+def get_prediction_agreement_matrix(list_to_checkpoints,model_type,dataset_name,dataloader,task):
+    '''computes the pred_agreement_matrix in a effient way for more then 2 models
+    Args:
+        list_to_checkpoints(list(str)): A list to paths of checkpoints of the models
+        model_type(str): The type of the model
+        dataset_name(str): The name of the dataset; together with model type identifies the model
+        dataloader(torch.dataloader): The dataloader to get the samples to predict on
+        task(str): either 'class' or 'seg', which task we are on 
 
-            #update the averageMeter
-            agreement.update(agree_percentage,len_batch)
+    Returns(nd.array): of model prediction agreements'''
+    number_models = len(list_to_checkpoints)
+    matrix = np.zeros((number_models,number_models))
 
-        if task == 'seg':
-            # prob compute dice score of both pred
-            raise NotImplementedError
-    return agreement.avg
+    list_models = [load_model_from_checkpoint(list_to_checkpoints[i],model_type,dataset_name) 
+        for i in range(len(list_to_checkpoints))]
+    
+    list_predictions = [get_prediction_on_data(list_models[i],dataloader,0,task) 
+        for i in range(len(list_models))]
+
+    for i in range(number_models):
+        for j in range(i+1):
+            value = prediction_agreement(list_predictions[i],list_predictions[j],task)
+            matrix[i,j] = value 
+            matrix[j,i] = value
+    return matrix
+
 
 def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_predictions, task):
     '''computes the t_SNE plot like in the Loss Landscape Paper. Goes through every 
     checkpoint, uses the algorithm from the Loss Landscape paper to map it to 2d.
     Args:
-        list_to_checkpoints(list(str)): A list to paths of checkpoints of the models
+        list_to_models(list(str)): A list to paths of checkpoints of the models
+        model_type(str): The type of the model
+        dataset_name(str): The name of the dataset; together with model type identifies the model
         dataloader(torch.dataloader): The dataloader to get the samples to predict on
         number_predictions(int): The number of predictions to use for the plot
         task(str): either 'class' or 'seg', which task we are on
