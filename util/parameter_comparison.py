@@ -3,8 +3,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np 
-from ResNet import resnet # pylint: disable=import-error
-from util.saving import get_state_dict_from_checkpoint # pylint: disable=import-error
+from util.saving import get_state_dict_from_checkpoint,load_resnet_model_from_checkpoint # pylint: disable=import-error
 from util.inference import get_prediction # pylint: disable=import-error
 from util.average_meter import AverageMeter # pylint: disable=import-error
 
@@ -23,10 +22,7 @@ def get_matrix_of_models(list_to_checkpoints, model_type, comparison_function, *
 
     #load the models
     for i in range(n_models):
-        model = resnet.__dict__[model_type]()
-        model.load_state_dict(get_state_dict_from_checkpoint(list_to_checkpoints[i]))
-        if torch.cuda.is_available():
-            model.cuda()  
+        model = load_resnet_model_from_checkpoint(list_to_checkpoints[i], model_type)
         list_models.append(model)
     
     #compute the matrix
@@ -36,7 +32,6 @@ def get_matrix_of_models(list_to_checkpoints, model_type, comparison_function, *
             matrix[i,j] = value 
             matrix[j,i] = value
     return matrix
-
 
 def get_flattened_params(model):
     '''reads parameters of a model and return them as a flattened array'''
@@ -86,3 +81,15 @@ def prediction_agreement(model_0,model_1,dataloader,task):
             # prob compute dice score of both pred
             raise NotImplementedError
     return agreement.avg
+
+def get_tSNE_plot(list_to_models, model_type, dataloader, number_predictions, task):
+    '''computes the t_SNE plot like in the Loss Landscape Paper. Goes through every 
+    checkpoint, uses the algorithm from the Loss Landscape paper to map it to 2d.
+    Args:
+        list_to_checkpoints(list(str)): A list to paths of checkpoints of the models
+        dataloader(torch.dataloader): The dataloader to get the samples to predict on
+        number_predictions(int): The number of predictions to use for the plot
+        task(str): either 'class' or 'seg', which task we are on
+    Returns(list(tupels)): A List with every sublist being the 2d projection of a checkpoint 
+        of the model
+    '''

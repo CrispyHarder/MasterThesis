@@ -15,17 +15,17 @@ from util.saving import save_checkpoint
 from util.average_meter import AverageMeter
 from util.learning_rates import MultistepMultiGammaLR
 from util.learning_rates import get_lr
-from ResNet import resnet
+from ResNet import resnet_cifar10
 
-model_names = sorted(name for name in resnet.__dict__
+model_names = sorted(name for name in resnet_cifar10.__dict__
     if name.islower() and not name.startswith("__")
                      and name.startswith("resnet")
-                     and callable(resnet.__dict__[name]))
+                     and callable(resnet_cifar10.__dict__[name]))
 
 print(model_names)
 
 default_data_storage = os.path.join('storage','data')
-default_save_dir = os.path.join('storage','models','ResNet')
+default_save_dir = os.path.join('storage','models','ResNet','cifar10')
 
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
 parser.add_argument('--data_storage', default=default_data_storage)
@@ -98,7 +98,7 @@ def main():
         writer = SummaryWriter(save_dir_run)
 
         # set the model, load and send to device
-        model = resnet.__dict__[args.arch]()
+        model = resnet_cifar10.__dict__[args.arch]()
         model.cuda()
 
         # optionally resume from a checkpoint
@@ -178,7 +178,7 @@ def main():
         improvement_margin = args.improvement_margin
         breaking_condition = args.breaking_condition
         best_prec1 = 0
-        
+
         for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
             
             #get the learning rate of the optimizer
