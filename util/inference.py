@@ -23,7 +23,7 @@ def get_prediction_on_data(model,dataloader,number_pred,task):
     Args:
         model: the model
         dataloader(torch.dataloader)
-        number_pred(int): the maximum number of predictions to compute
+        number_pred(int): the maximum number of predictions to compute. if 0 all data it used
         task: either 'class' or 'seg' 
 
     Returns(tensor): with the predictions'''
@@ -31,7 +31,7 @@ def get_prediction_on_data(model,dataloader,number_pred,task):
     predictions = []
     for _,(img,_) in enumerate(dataloader):
         
-        if number_samples > number_pred:
+        if  not number_pred==0 and number_samples > number_pred:
             break
         number_samples += len(img)
         
