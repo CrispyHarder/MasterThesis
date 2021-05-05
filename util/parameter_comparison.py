@@ -3,11 +3,13 @@
 import torch
 import torch.nn.functional as F
 import numpy as np 
-from util.saving import get_state_dict_from_checkpoint,load_resnet_model_from_checkpoint # pylint: disable=import-error
-from util.inference import get_prediction # pylint: disable=import-error
+import os
+from util.saving import get_state_dict_from_checkpoint,load_model_from_checkpoint# pylint: disable=import-error
+from util.inference import get_prediction, get_prediction_on_data # pylint: disable=import-error
 from util.average_meter import AverageMeter # pylint: disable=import-error
+from sklearn.manifold import TSNE
 
-def get_matrix_of_models(list_to_checkpoints, model_type, comparison_function, **kwargs):
+def get_matrix_of_models(list_to_checkpoints, model_type, dataset_name, comparison_function, **kwargs):
     '''compute a matrix for the different comparison values of comparison function
     Args:
         list_to_checkpoints(list(string)): a list of paths to the model checkpoints
@@ -22,7 +24,7 @@ def get_matrix_of_models(list_to_checkpoints, model_type, comparison_function, *
 
     #load the models
     for i in range(n_models):
-        model = load_resnet_model_from_checkpoint(list_to_checkpoints[i], model_type)
+        model = load_model_from_checkpoint(list_to_checkpoints[i], model_type, dataset_name)
         list_models.append(model)
     
     #compute the matrix
@@ -82,7 +84,7 @@ def prediction_agreement(model_0,model_1,dataloader,task):
             raise NotImplementedError
     return agreement.avg
 
-def get_tSNE_plot(list_to_models, model_type, dataloader, number_predictions, task):
+def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_predictions, task):
     '''computes the t_SNE plot like in the Loss Landscape Paper. Goes through every 
     checkpoint, uses the algorithm from the Loss Landscape paper to map it to 2d.
     Args:
@@ -93,3 +95,18 @@ def get_tSNE_plot(list_to_models, model_type, dataloader, number_predictions, ta
     Returns(list(tupels)): A List with every sublist being the 2d projection of a checkpoint 
         of the model
     '''
+    #get a list of predictions, ever sublist for one model 
+    all_predictions = [[] for _ in range(len(list_to_models))]
+    for i,model_path in enumerate(list_to_models):
+        checkpoint_paths = [path for path in os.listdir(model_path) if path.startswith('checkpoint')]
+        for c_path in checkpoint_paths:
+            model = load_model_from_checkpoint(os.path.join(model_path,c_path),model_type,dataset_name)
+            all_predictions[i].append(get_prediction_on_data(model,dataloader,number_predictions, task))
+    
+    tsne_data_list = [c_pred for model_list in all_predictions for c_pred in model_list]
+    tsne_data = torch.stack(tsne_data_list)
+
+    tsne_data_trans = TSNE(perplexity=5).fit_transform(tsne_data)
+    return tsne_data_trans
+
+    
