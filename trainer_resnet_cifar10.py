@@ -70,11 +70,11 @@ parser.add_argument('--improvement_margin', type=float, default=0.5)
 parser.add_argument('--breaking_condition', type=int, default=15, 
                     help='''After how many epochs without aggregated improvement 
                     of at least improvement_margin the training shall be stopped''')
-best_prec1 = 0
+
 
 
 def main():
-    global args, best_prec1
+    global args
     args = parser.parse_args()
 
     #set device
@@ -177,7 +177,8 @@ def main():
         epochs_wo_improvement = 0
         improvement_margin = args.improvement_margin
         breaking_condition = args.breaking_condition
-
+        best_prec1 = 0
+        
         for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
             
             #get the learning rate of the optimizer
