@@ -13,13 +13,16 @@ def save_checkpoint(state, is_best=True, is_checkpoint=True, filename='checkpoin
 
 def get_state_dict_from_checkpoint(checkpoint_path):
     '''loads the state dict from a given checkpoint path'''
-    checkpoint = torch.load(checkpoint_path)
+    if torch.cuda.is_available():
+        checkpoint = torch.load(checkpoint_path)
+    else:
+        checkpoint = torch.load(checkpoint_path,map_location=torch.device('cpu'))
     return checkpoint['state_dict']
 
 def load_model_from_checkpoint(checkpoint_path, model_type, dataset_name):
     '''Gets a path to a checkpoint and a model type and loads the model 
     using the state dict'''
-    if dataset_name == 'c10':
+    if dataset_name == 'cifar10':
         model = resnet_cifar10.__dict__[model_type]()
         model.load_state_dict(get_state_dict_from_checkpoint(checkpoint_path))
         if torch.cuda.is_available():
