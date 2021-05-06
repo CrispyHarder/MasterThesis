@@ -9,7 +9,7 @@ def plot_matrix_as_heatmap(matrix,show=False,title='',xlabel='',ylabel='',save_p
     n = np.shape(np.array(matrix))[0]
     ticks = math.floor(n/4)
     sns.set_theme()
-    ax = sns.heatmap(matrix,xticklabels=ticks,yticklabels=ticks)
+    ax = sns.heatmap(matrix,xticklabels=ticks,yticklabels=ticks,cmap='bwr')
     ax.invert_yaxis()
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
