@@ -4,9 +4,8 @@ import torch
 import torch.nn.functional as F
 import numpy as np 
 import os
-from util.saving import get_state_dict_from_checkpoint,load_model_from_checkpoint# pylint: disable=import-error
-from util.inference import get_prediction, get_prediction_on_data # pylint: disable=import-error
-from util.average_meter import AverageMeter # pylint: disable=import-error
+from util.saving import load_model_from_checkpoint# pylint: disable=import-error
+from util.inference import get_prediction_on_data # pylint: disable=import-error
 from sklearn.manifold import TSNE
 
 def get_matrix_of_models(list_to_checkpoints, model_type, dataset_name, comparison_function, **kwargs):
@@ -100,6 +99,7 @@ def get_prediction_agreement_matrix(list_to_checkpoints,model_type,dataset_name,
 def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_predictions, perplexity, task):
     '''computes the t_SNE plot like in the Loss Landscape Paper. Goes through every 
     checkpoint, uses the algorithm from the Loss Landscape paper to map it to 2d.
+    Assumes every model has the same number of checkpoints.
     Args:
         list_to_models(list(str)): A list to paths of checkpoints of the models
         model_type(str): The type of the model
@@ -113,7 +113,8 @@ def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_p
         of the model
     '''
     #get a list of predictions, ever sublist for one model 
-    all_predictions = [[] for _ in range(len(list_to_models))]
+    number_models = len(list_to_models)
+    all_predictions = [[] for _ in range(number_models)]
     for i,model_path in enumerate(list_to_models):
         checkpoint_paths = [path for path in os.listdir(model_path) if path.startswith('checkpoint')]
         for c_path in checkpoint_paths:
@@ -124,6 +125,14 @@ def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_p
     tsne_data = torch.stack(tsne_data_list)
 
     tsne_data_trans = TSNE(perplexity=perplexity).fit_transform(tsne_data)
-    return tsne_data_trans
+
+    # get the checkpoints of one model into one list ASSUMES EVERY MODEL HAS SAME NUMBER OF CHECKPOINTS
+    length_tsne_trans = len(tsne_data_trans)
+    pred_per_model = length_tsne_trans/number_models
+    tsne_per_model = [[] for _ in range(number_models)]
+    for i in range(number_models):
+        tsne_per_model[i]=tsne_data_trans[pred_per_model*i:pred_per_model*(i+1)]
+
+    return tsne_per_model
 
     
