@@ -48,29 +48,51 @@ def cosine_sim_model_params(model_0,model_1):
     params_1 = get_flattened_params(model_1)
     return F.cosine_similarity(params_0,params_1,dim=0)
 
-def prediction_disagreement(pred_0,pred_1,task):
+def prediction_disagreement(pred_0,pred_1,task,only_on_right_pred=False):
     '''computes the prediction disagreement between two prediction tensors
     Args:
         pred_0(torch.tensor): One of the models to compare
         pred_1(torch.tessor): The other model to compare 
         task(str): either 'class' or 'seg'. The task dictates
             how exactly the disagreement is computed
-    
+        only_on_right_pred(bool):whether the prediction disagreement is only to be 
+            computed on predictions where at least one model predicts correctly
+
     Returns(float): The prediction agreement of the two tensors'''
 
     if task == 'class':
-        len_pred = len(pred_0)
+        if not only_on_right_pred:
+            # default behaviour
+            len_pred = len(pred_0)
 
-        # get number of same predictions and then percentage
-        same_pred = pred_0.eq(pred_1).float().sum(0)
-        agree_percentage = same_pred/len_pred
+            # get number of same predictions and then percentage
+            same_pred = pred_0.eq(pred_1).float().sum(0)
+            agree_percentage = same_pred/len_pred
+        else: 
+            #get the predictions and labels
+            pred0 = pred_0[0]
+            label0 = pred_0[1]
+            pred1 = pred_1[0]
+            label1 = pred_1[1]
+
+            #get the predictions where at least one model was right
+            equal_0 = pred0.eq(label0)
+            equal_1 = pred1.eq(label1)
+            at_least_one_right = torch.logical_or(equal_0,equal_1)
+            nr_at_least_one_right = at_least_one_right.float().sum(0)
+
+            # get the number of same predictions, where also at least one prediction was right
+            same_pred_at_least_one_right = torch.dot(pred0.eq(pred1).float(),at_least_one_right.float())
+
+            agree_percentage = same_pred_at_least_one_right/nr_at_least_one_right
+
 
     if task == 'seg':
         # prob compute dice score of both pred
         raise NotImplementedError
     return 1-agree_percentage
 
-def get_prediction_disagreement_matrix(list_to_checkpoints,model_type,dataset_name,dataloader,task):
+def get_prediction_disagreement_matrix(list_to_checkpoints,model_type,dataset_name,dataloader,task,only_on_right_pred=False):
     '''computes the pred_agreement_matrix in a effient way for more then 2 models
     Args:
         list_to_checkpoints(list(str)): A list to paths of checkpoints of the models
@@ -78,6 +100,8 @@ def get_prediction_disagreement_matrix(list_to_checkpoints,model_type,dataset_na
         dataset_name(str): The name of the dataset; together with model type identifies the model
         dataloader(torch.dataloader): The dataloader to get the samples to predict on
         task(str): either 'class' or 'seg', which task we are on 
+        only_on_right_pred(bool):whether the prediction disagreement is only to be 
+            computed on predictions where at least one model predicts correctly
 
     Returns(nd.array): of model prediction agreements'''
     number_models = len(list_to_checkpoints)
@@ -86,12 +110,12 @@ def get_prediction_disagreement_matrix(list_to_checkpoints,model_type,dataset_na
     list_models = [load_model_from_checkpoint(list_to_checkpoints[i],model_type,dataset_name) 
         for i in range(len(list_to_checkpoints))]
     
-    list_predictions = [get_prediction_on_data(list_models[i],dataloader,0,task) 
+    list_predictions = [get_prediction_on_data(list_models[i],dataloader,0,task,only_on_right_pred) 
         for i in range(len(list_models))]
 
     for i in range(number_models):
         for j in range(i+1):
-            value = prediction_disagreement(list_predictions[i],list_predictions[j],task)
+            value = prediction_disagreement(list_predictions[i],list_predictions[j],task,only_on_right_pred)
             matrix[i,j] = value 
             matrix[j,i] = value
     return matrix
@@ -136,5 +160,6 @@ def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_p
         tsne_per_model[i]=tsne_data_trans[pred_per_model*i:pred_per_model*(i+1)]
 
     return tsne_per_model
+
 
     
