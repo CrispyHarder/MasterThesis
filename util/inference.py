@@ -16,7 +16,7 @@ def get_prediction(input,model,task):
     if task == 'seg':
         raise NotImplementedError
 
-def get_prediction_on_data(model,dataloader,number_pred,task):
+def get_prediction_on_data(model,dataloader,number_pred,task,return_labels=False):
     '''computes a number of predictions on the dataloader and returns 
     a tensor of predictions in the class case or a list of segmented slices 
     in the seg case
@@ -29,7 +29,8 @@ def get_prediction_on_data(model,dataloader,number_pred,task):
     Returns(tensor): with the predictions'''
     number_samples = 0
     predictions = []
-    for _,(img,_) in enumerate(dataloader):
+    labels = []
+    for _,(img,label) in enumerate(dataloader):
         
         if  not number_pred==0 and number_samples > number_pred:
             break
@@ -41,13 +42,19 @@ def get_prediction_on_data(model,dataloader,number_pred,task):
         batch_pred = get_prediction(img,model,task)
         
         predictions.append(batch_pred)
+        if return_labels:
+            labels.append(label)
 
     if task == 'class':
         predictions = torch.stack(predictions) # pylint: disable=not-callable
         predictions = torch.flatten(predictions) 
+        if return_labels:
+            labels = torch.stack(labels)
+            labels = torch.flatten(labels)
     
     if task == 'seg':
         raise NotImplementedError
     
-    return predictions
+    return predictions,labels
+
         
