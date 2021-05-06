@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np 
 import os
+import re
 from util.saving import load_model_from_checkpoint# pylint: disable=import-error
 from util.inference import get_prediction_on_data # pylint: disable=import-error
 from sklearn.manifold import TSNE
@@ -117,6 +118,7 @@ def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_p
     all_predictions = [[] for _ in range(number_models)]
     for i,model_path in enumerate(list_to_models):
         checkpoint_paths = [path for path in os.listdir(model_path) if path.startswith('checkpoint')]
+        checkpoint_paths.sort(key=lambda f: int(re.sub('\D', '', f)))
         for c_path in checkpoint_paths:
             model = load_model_from_checkpoint(os.path.join(model_path,c_path),model_type,dataset_name)
             all_predictions[i].append(get_prediction_on_data(model,dataloader,number_predictions, task))
