@@ -97,7 +97,7 @@ def get_prediction_agreement_matrix(list_to_checkpoints,model_type,dataset_name,
     return matrix
 
 
-def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_predictions, task):
+def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_predictions, perplexity, task):
     '''computes the t_SNE plot like in the Loss Landscape Paper. Goes through every 
     checkpoint, uses the algorithm from the Loss Landscape paper to map it to 2d.
     Args:
@@ -106,6 +106,8 @@ def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_p
         dataset_name(str): The name of the dataset; together with model type identifies the model
         dataloader(torch.dataloader): The dataloader to get the samples to predict on
         number_predictions(int): The number of predictions to use for the plot
+        perplexity(int): a parameter for the t-SNE method. between 5 und 50, gives how many 
+            point should be considered for neighbourhood.
         task(str): either 'class' or 'seg', which task we are on
     Returns(list(tupels)): A List with every sublist being the 2d projection of a checkpoint 
         of the model
@@ -121,7 +123,7 @@ def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_p
     tsne_data_list = [c_pred for model_list in all_predictions for c_pred in model_list]
     tsne_data = torch.stack(tsne_data_list)
 
-    tsne_data_trans = TSNE(perplexity=5).fit_transform(tsne_data)
+    tsne_data_trans = TSNE(perplexity=perplexity).fit_transform(tsne_data)
     return tsne_data_trans
 
     
