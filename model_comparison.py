@@ -18,6 +18,7 @@ parser.add_argument('--task',choices=['class','seg'],default='class')
 # which experiments to conduct 
 parser.add_argument('--tsne', default=False, action='store_true', help='whether tsne plot shall be computed')
 parser.add_argument('--pred_disagree_models', default=False, action='store_true', help='whether tsne plot shall be computed')
+parser.add_argument('--pred_disagree_models_right',default=False, action='store_true', help='whether tsne plot shall be computed')
 parser.add_argument('--pred_disagree_checkpoints', default=False, action='store_true', help='whether tsne plot shall be computed')
 parser.add_argument('--cosine_sim_models', default=False, action='store_true', help='whether tsne plot shall be computed')
 parser.add_argument('--cosine_sim_checkpoints', default=False, action='store_true', help='whether tsne plot shall be computed')
@@ -30,6 +31,10 @@ parser.add_argument('--tsne_number_pred',default=5000,type=int,help='How many pr
 # pred_disagree_models specific arguments, only works on older runs, where only last checkpoint was saved
 parser.add_argument('--pdm_start_runs',type=int,default=150,help='together with end runs determines, which runs to use')
 parser.add_argument('--pdm_end_runs',type=int,default=200)
+
+# pred_disagree_models_right specific arguments, only works on older runs, where only last checkpoint was saved
+parser.add_argument('--pdmr_start_runs',type=int,default=150,help='together with end runs determines, which runs to use')
+parser.add_argument('--pdmr_end_runs',type=int,default=200)
 
 # pred_disagree_checkpoints specific arguments
 parser.add_argument('--pdc_run',type=int,default=215,help='together with end runs determines, which runs to use')
@@ -95,6 +100,16 @@ def main():
             xlabel='independent model', ylabel='independent model',
             save_path=os.path.join(results_path,'pred_disagree_models'))
     
+    if args.pred_disagree_models_right:
+        print('computing model disagreement, where at least one model is right')
+        list_to_checkpoints= [os.path.join(list_to_models,'run_{}'.format(run_nr),'checkpoint.th') 
+            for run_nr in range(args.pdmr_start_runs,args.pdmr_end_runs)]
+        pred_disagree_matrix = get_prediction_disagreement_matrix(list_to_checkpoints,args.model_type,args.dataset_name,val_loader,args.task,True)
+        plot_matrix_as_heatmap(pred_disagree_matrix,False,'Pred Disagreement of models {} to {} on data at least one was right'.
+            format(args.pdmr_start_runs,args.pdmr_end_runs),
+            xlabel='independent model', ylabel='independent model',
+            save_path=os.path.join(results_path,'pred_disagree_models_right'))
+
     if args.pred_disagree_checkpoints:
         print('computing pred_disagree_checkpoints')
         path_to_run = os.path.join(list_to_models,'run_'+str(args.pdc_run))
