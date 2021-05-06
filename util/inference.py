@@ -55,6 +55,9 @@ def get_prediction_on_data(model,dataloader,number_pred,task,return_labels=False
     if task == 'seg':
         raise NotImplementedError
     
-    return predictions,labels
+    if return_labels:
+        return [predictions,labels]
+    else:
+        return predictions
 
         
