@@ -129,7 +129,6 @@ def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_p
     # get the checkpoints of one model into one list ASSUMES EVERY MODEL HAS SAME NUMBER OF CHECKPOINTS
     length_tsne_trans = len(tsne_data_trans)
     pred_per_model = int(length_tsne_trans/number_models)
-    print(pred_per_model)
     tsne_per_model = [[] for _ in range(number_models)]
     for i in range(number_models):
         tsne_per_model[i]=tsne_data_trans[pred_per_model*i:pred_per_model*(i+1)]
