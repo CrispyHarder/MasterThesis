@@ -27,6 +27,7 @@ def plot_tSNE_scatter(projections_per_model, show=False, save_path=''):
     plt.title('t-SNE plots of models')
     plt.xlabel('t-SNE axis 1')
     plt.xlabel('t-SNE axis 2')
+    plt.legend()
     plt.savefig(save_path)
     if show:
         plt.show()
