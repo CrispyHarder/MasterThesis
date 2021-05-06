@@ -25,7 +25,8 @@ def get_prediction_on_data(model,dataloader,number_pred,task,return_labels=False
         dataloader(torch.dataloader)
         number_pred(int): the maximum number of predictions to compute. if 0 all data it used
         task: either 'class' or 'seg' 
-
+        return_labels(bool): whether also the ground truth labels should be returned
+        
     Returns(tensor): with the predictions'''
     number_samples = 0
     predictions = []
