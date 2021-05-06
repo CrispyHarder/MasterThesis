@@ -47,7 +47,7 @@ def cosine_sim_model_params(model_0,model_1):
     params_1 = get_flattened_params(model_1)
     return F.cosine_similarity(params_0,params_1,dim=0)
 
-def prediction_agreement(pred_0,pred_1,task):
+def prediction_disagreement(pred_0,pred_1,task):
     '''computes the prediction disagreement between two prediction tensors
     Args:
         pred_0(torch.tensor): One of the models to compare
@@ -67,9 +67,9 @@ def prediction_agreement(pred_0,pred_1,task):
     if task == 'seg':
         # prob compute dice score of both pred
         raise NotImplementedError
-    return agree_percentage
+    return 1-agree_percentage
 
-def get_prediction_agreement_matrix(list_to_checkpoints,model_type,dataset_name,dataloader,task):
+def get_prediction_disagreement_matrix(list_to_checkpoints,model_type,dataset_name,dataloader,task):
     '''computes the pred_agreement_matrix in a effient way for more then 2 models
     Args:
         list_to_checkpoints(list(str)): A list to paths of checkpoints of the models
@@ -90,7 +90,7 @@ def get_prediction_agreement_matrix(list_to_checkpoints,model_type,dataset_name,
 
     for i in range(number_models):
         for j in range(i+1):
-            value = prediction_agreement(list_predictions[i],list_predictions[j],task)
+            value = prediction_disagreement(list_predictions[i],list_predictions[j],task)
             matrix[i,j] = value 
             matrix[j,i] = value
     return matrix
