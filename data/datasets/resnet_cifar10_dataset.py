@@ -1,6 +1,7 @@
 import os 
 import torch
 from torch.utils.data import Dataset
+from util.saving import get_state_dict_from_checkpoint # pylint: disable=import-error
 
 class resnet_cifar10_parameters_dataset(Dataset):
     '''a class for parameters of resnet20,resnet32,resnet44 in order
@@ -59,16 +60,24 @@ class resnet_cifar10_parameters_dataset(Dataset):
             arch = 'resnet44'
             path_to_params = self.paths_to_params_by_model[2][index-self.length_r20-self.length_r32]
 
-        # now load params and some layers and some kernel depths with 0s
-        # all kernels are padded to depth 64 
-        # and the layers are conv 1(1 x kern 16 x depth 3), layer1(14 x kern 16 x depth 16),
-        # layer2(1 x kern 32 x depth 16, 13 x kern 32 x depth 32)/layer3(1x kern 64 x depth 32 , 13 x kern 64 x depth 64) 
-        # -> 1+ 7*2*3 = 43 layers, fc layer (Encode ??)
-        # This leads to a either a [43 x 64 x 3 x 3, arch] (layer is in position)
-        # or a [1 x 64 x 3 x 3, 14 x 64 x 3 x 3, 14 x 64 x 3 x 3, 14 x 64 x 3 x 3, arch] return
-        # weights might be easier to extract then thought, by going through state dict, the names of the weights tell a lot 
-        # see private file 
-        return [torch.zeros(43,64,3,3),arch]
+        parameters = []
 
-
+        state_dict = get_state_dict_from_checkpoint(path_to_params)
+        for param_tensor in state_dict:
+            if 'conv' in param_tensor:
+                params = state_dict[param_tensor]
+                p_shape = params.shape
+                # pad zeros to ending of param vector
+                params = torch.cat((params,torch.zeros(p_shape[0],64-p_shape[1],3,3)),dim=1)
+                parameters.append(params)
         
+        # # add missing layers for smaller resnets 
+        # if arch == 'resnet20':
+        #     missing_layers = 8
+        #     for _ in range(missing_layers):
+        #         parameters.insert(7,torch.zeros(16,64,3,3))
+        # if arch == 'resnet32':
+        #     missing_layers = 4 
+        
+        return [parameters,arch]
+           
