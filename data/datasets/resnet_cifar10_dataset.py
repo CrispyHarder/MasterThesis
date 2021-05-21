@@ -2,6 +2,7 @@ import os
 import torch
 from torch.utils.data import Dataset
 from util.saving import get_state_dict_from_checkpoint # pylint: disable=import-error
+from util.data_reshaping import stack_to_side # pylint: disable=import-error
 
 class resnet_cifar10_parameters_dataset(Dataset):
     '''a class for parameters of resnet20,resnet32,resnet44 in order
@@ -69,6 +70,7 @@ class resnet_cifar10_parameters_dataset(Dataset):
                 p_shape = params.shape
                 # pad zeros to ending of param vector
                 params = torch.cat((params,torch.zeros(p_shape[0],64-p_shape[1],3,3)),dim=1)
+                params = stack_to_side(params)
                 parameters.append(params)
         
         # # add missing layers for smaller resnets 
@@ -80,4 +82,3 @@ class resnet_cifar10_parameters_dataset(Dataset):
         #     missing_layers = 4 
         
         return [parameters,arch]
-           
