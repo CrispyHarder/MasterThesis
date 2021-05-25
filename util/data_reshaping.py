@@ -31,7 +31,7 @@ def stack_to_side(stacked_tensors):
       '''
       
     shape = stacked_tensors.shape
-    assert(shape[2]==shape[3])
+    assert shape[2]==shape[3] 
     depth = shape[1]
     k_size = shape[2]
 
@@ -50,5 +50,9 @@ def stack_to_side(stacked_tensors):
     new_tensor = torch.zeros(depth,k_size*first_dim,k_size*second_dim)
     for i in range(first_dim):
         for j in range(second_dim):
-            new_tensor[:,i*k_size:(i+1)*k_size,j*k_size:(j+1)*k_size] = stacked_tensors[i*first_dim+j] 
+            new_tensor[:,i*k_size:(i+1)*k_size,j*k_size:(j+1)*k_size] = stacked_tensors[i*second_dim+j] 
     return new_tensor
+
+
+def side_to_stack(sided_tensors):
+    pass

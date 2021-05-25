@@ -25,24 +25,25 @@ class resnet_cifar10_parameters_dataset(Dataset):
         self.path_to_data = path_to_data
         self.archs = ['resnet20','resnet32','resnet44']
         #check whether data from other model architectures is present
-        for path_to_model in os.listdir(self.path_to_data):
-            assert(path_to_model in self.archs)
+        for path_to_arch in os.listdir(self.path_to_data):
+            assert(path_to_arch in self.archs)
         
         # get a list to the files with with the model states containing the params
         # for every of the 3 models a list
         self.length = 0
         
-        self.paths_to_params_by_model = [[],[],[]]
-        for i,path_to_arch in enumerate(os.listdir(self.path_to_data)):
+        self.paths_to_params_by_arch = [[],[],[]]
+        for i,arch in enumerate(os.listdir(self.path_to_data)):
+            path_to_arch = os.path.join(self.path_to_data,arch)
             for run in os.listdir(path_to_arch):
-                path_to_params = os.path.join(self.path_to_data,path_to_arch,run,'model.th')
+                path_to_params = os.path.join(path_to_arch,run,'model.th')
                 if os.path.exists(path_to_params):
-                    self.paths_to_params_by_model[i].append(path_to_params)
+                    self.paths_to_params_by_arch[i].append(path_to_params)
                     self.length += 1
         
-        self.length_r20 = len(self.paths_to_params_by_model[0])
-        self.length_r32 = len(self.paths_to_params_by_model[1])
-        self.length_r44 = len(self.paths_to_params_by_model[2])
+        self.length_r20 = len(self.paths_to_params_by_arch[0])
+        self.length_r32 = len(self.paths_to_params_by_arch[1])
+        self.length_r44 = len(self.paths_to_params_by_arch[2])
         
 
     def __len__(self):
@@ -53,13 +54,13 @@ class resnet_cifar10_parameters_dataset(Dataset):
         # first check which architecture the index belongs to and get path
         if index < self.length_r20:
             arch = 'resnet20'
-            path_to_params = self.paths_to_params_by_model[0][index]
+            path_to_params = self.paths_to_params_by_arch[0][index]
         elif index - self.length_r20 < self.length_r32:
             arch = 'resnet32'
-            path_to_params = self.paths_to_params_by_model[1][index-self.length_r20]
+            path_to_params = self.paths_to_params_by_arch[1][index-self.length_r20]
         else:
             arch = 'resnet44'
-            path_to_params = self.paths_to_params_by_model[2][index-self.length_r20-self.length_r32]
+            path_to_params = self.paths_to_params_by_arch[2][index-self.length_r20-self.length_r32]
 
         parameters = []
 
@@ -67,6 +68,9 @@ class resnet_cifar10_parameters_dataset(Dataset):
         for param_tensor in state_dict:
             if 'conv' in param_tensor:
                 params = state_dict[param_tensor]
+                p_shape = params.shape
+                # add 0 - kernels for unit input size
+                params = torch.cat((params,torch.zeros(64-p_shape[0],p_shape[1],3,3)),dim=0)
                 p_shape = params.shape
                 # pad zeros to ending of param vector
                 params = torch.cat((params,torch.zeros(p_shape[0],64-p_shape[1],3,3)),dim=1)
@@ -81,4 +85,4 @@ class resnet_cifar10_parameters_dataset(Dataset):
         # if arch == 'resnet32':
         #     missing_layers = 4 
         
-        return [parameters,arch]
+        return torch.stack(parameters) # pylint: disable=not-callable
