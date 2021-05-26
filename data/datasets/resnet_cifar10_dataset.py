@@ -8,14 +8,15 @@ class resnet_cifar10_parameters_dataset(Dataset):
     '''a class for parameters of resnet20,resnet32,resnet44 in order
     to feed into a data loader'''
     
-    def __init__(self,path_to_data):
+    def __init__(self,path_to_data,train):
         '''path to data is a path, whose directories contain the 
         directories containing the paths:
         paths_to_data
             resnet20
-                run_1
-                    model.th <- actual model state dict
-                run_2
+                train
+                    run_1
+                        model.th <- actual model state dict
+                    run_2
                 ...
             resnet32
                 ...
@@ -27,14 +28,19 @@ class resnet_cifar10_parameters_dataset(Dataset):
         #check whether data from other model architectures is present
         for path_to_arch in os.listdir(self.path_to_data):
             assert(path_to_arch in self.archs)
-        
+
+        if train:
+            self.mode = 'train'
+        else:
+            self.mode = 'val'
+
         # get a list to the files with with the model states containing the params
         # for every of the 3 models a list
         self.length = 0
         
         self.paths_to_params_by_arch = [[],[],[]]
         for i,arch in enumerate(os.listdir(self.path_to_data)):
-            path_to_arch = os.path.join(self.path_to_data,arch)
+            path_to_arch = os.path.join(self.path_to_data,arch,self.mode)
             for run in os.listdir(path_to_arch):
                 path_to_params = os.path.join(path_to_arch,run,'model.th')
                 if os.path.exists(path_to_params):
