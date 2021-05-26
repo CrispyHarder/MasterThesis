@@ -1,6 +1,7 @@
 import os 
 import shutil
 import argparse
+from scipy.sparse import data
 from sklearn.model_selection import train_test_split
 
 parser = argparse.ArgumentParser()
@@ -27,12 +28,14 @@ def train_val_split(path_to_data,split):
 
     print(train_data)
     for data_path in train_data:
-        data_path = os.path.join(path_to_data,data_path)
-        shutil.copy(data_path,train_path)
+        source_path = os.path.join(path_to_data,data_path)
+        dest_path = os.path.join(train_path,data_path)
+        shutil.copy(source_path,dest_path)
 
     for data_path in val_data:
-        data_path = os.path.join(path_to_data,data_path)
-        shutil.copy(data_path,val_path)
+        source_path = os.path.join(path_to_data,data_path)
+        dest_path = os.path.join(val_path,data_path)
+        shutil.copy(source_path,dest_path)
 
 def rename_cp_to_model(path_to_data):
     '''goes through the directory and renames checkpoint.th into model.th'''
