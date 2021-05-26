@@ -20,10 +20,8 @@ def train_val_split(path_to_data,split):
     # set paths and make directories
     train_path = os.path.join(path_to_data,'train')
     val_path = os.path.join(path_to_data,'val')
-    if not os.path.exists(train_path):
-        os.makedirs(train_path)
-    if not os.path.exists(val_path):
-        os.makedirs(val_path)
+    os.makedirs(train_path)
+    os.makedirs(val_path)
 
     data_paths = os.listdir(path_to_data)
     train_data,val_data=train_test_split(data_paths,test_size=split)
