@@ -21,7 +21,10 @@ class resnet_cifar10_parameters_dataset(Dataset):
             resnet32
                 ...
             resnet44
-                ...'''
+                ...
+        Args:
+            path_to_data(str): path to the data
+            train(bool): whether or not train or validation data should be used'''
 
         self.path_to_data = path_to_data
         self.archs = ['resnet20','resnet32','resnet44']
@@ -59,13 +62,13 @@ class resnet_cifar10_parameters_dataset(Dataset):
 
         # first check which architecture the index belongs to and get path
         if index < self.length_r20:
-            arch = 'resnet20'
+            arch = 0 # 'resnet20'
             path_to_params = self.paths_to_params_by_arch[0][index]
         elif index - self.length_r20 < self.length_r32:
-            arch = 'resnet32'
+            arch = 1 # 'resnet32'
             path_to_params = self.paths_to_params_by_arch[1][index-self.length_r20]
         else:
-            arch = 'resnet44'
+            arch = 2 # 'resnet44'
             path_to_params = self.paths_to_params_by_arch[2][index-self.length_r20-self.length_r32]
 
         parameters = []
@@ -91,4 +94,4 @@ class resnet_cifar10_parameters_dataset(Dataset):
         # if arch == 'resnet32':
         #     missing_layers = 4 
         
-        return torch.stack(parameters) # pylint: disable=not-callable
+        return torch.stack(parameters), arch # pylint: disable=not-callable
