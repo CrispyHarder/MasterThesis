@@ -1,8 +1,13 @@
 import os 
 import shutil
-import math
-from scipy.sparse import data
+import argparse
 from sklearn.model_selection import train_test_split
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--path',type=str)
+parser.add_argument('--split',type=float,default=0.2)
+parser.add_argument('--train_val_split', default=False, action='store_true')
+parser.add_argument('--rename_cp_to_model', default=False, action='store_true')
 
 def train_val_split(path_to_data,split):
     '''A function that splits a directory into a train and a val directory
@@ -38,4 +43,13 @@ def rename_cp_to_model(path_to_data):
             print(path_to_cp)
             os.rename(path_to_cp,path_to_model)
             
+def main():
+    global args
+    args = parser.parse_args()
+    if args.train_val_split:
+        train_val_split(args.path,args.split)
+    if args.rename_cp_to_model:
+        rename_cp_to_model(args.path)
 
+if __name__ == '__main__':
+    main()
