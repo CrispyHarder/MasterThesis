@@ -18,7 +18,7 @@ from data.datasets.resnet_cifar10_dataset import resnet_cifar10_parameters_datas
 
 
 default_data_storage = os.path.join('storage','models','ResNet','cifar10')
-default_save_dir = os.path.join('storage','models','VQVAE')
+default_save_dir = os.path.join('storage','models','VQVAE','resnet_cifar10')
 
 parser = argparse.ArgumentParser(description='VQ-VAE for Resnets trained on CIFAR10 in pytorch')
 
