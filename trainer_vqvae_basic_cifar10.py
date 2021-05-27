@@ -129,15 +129,13 @@ def main():
                                 batch_size=args.batch_size, 
                                 shuffle=True,
                                 num_workers=args.num_workers,
-                                pin_memory=True,
-                                multiprocessing_context='spawn')
+                                pin_memory=True)
 
     validation_loader = DataLoader(validation_data,
                                 batch_size=32,
                                 shuffle=True,
                                 num_workers=args.num_workers,
-                                pin_memory=True,
-                                multiprocessing_context='spawn')
+                                pin_memory=True)
 
     #to use in loss 
     global train_data_variance
