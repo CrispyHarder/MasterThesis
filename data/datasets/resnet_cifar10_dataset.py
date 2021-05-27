@@ -79,10 +79,18 @@ class resnet_cifar10_parameters_dataset(Dataset):
                 params = state_dict[param_tensor]
                 p_shape = params.shape
                 # add 0 - kernels for unit input size
-                params = torch.cat((params,torch.zeros(64-p_shape[0],p_shape[1],3,3)),dim=0)
+                if torch.cuda.is_available():
+                    pad_vec = torch.zeros(64-p_shape[0],p_shape[1],3,3).cuda()
+                else:
+                    pad_vec = torch.zeros(64-p_shape[0],p_shape[1],3,3)
+                params = torch.cat((params,pad_vec),dim=0)
                 p_shape = params.shape
                 # pad zeros to ending of param vector
-                params = torch.cat((params,torch.zeros(p_shape[0],64-p_shape[1],3,3)),dim=1)
+                if torch.cuda.is_available():
+                    pad_vec = torch.zeros(p_shape[0],64-p_shape[1],3,3).cuda()
+                else:
+                    pad_vec = torch.zeros(p_shape[0],64-p_shape[1],3,3)
+                params = torch.cat((params,pad_vec),dim=1)
                 params = stack_to_side(params)
                 parameters.append(params)
         

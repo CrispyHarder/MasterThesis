@@ -48,6 +48,8 @@ def stack_to_side(stacked_tensors):
         first_dim = 8
         second_dim = 8 
     new_tensor = torch.zeros(depth,k_size*first_dim,k_size*second_dim)
+    if torch.cuda.is_available():
+        new_tensor = new_tensor.cuda()
     for i in range(first_dim):
         for j in range(second_dim):
             new_tensor[:,i*k_size:(i+1)*k_size,j*k_size:(j+1)*k_size] = stacked_tensors[i*second_dim+j] 
