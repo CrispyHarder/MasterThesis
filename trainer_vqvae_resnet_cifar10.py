@@ -27,7 +27,8 @@ parser.add_argument('-device',default="0")
 
 # training specifics 
 parser.add_argument('--runs',type=int,default=1, help = 'number of runs')
-parser.add_argument('--runs_start_at',type=int, help ='how many runs already have been done')
+parser.add_argument('--runs_start_at',type=int, default=0,
+                    help='how many runs already have been done')
 parser.add_argument('--epochs', default=120, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
