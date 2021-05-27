@@ -26,7 +26,6 @@ def train_val_split(path_to_data,split):
     data_paths = [path for path in os.listdir(path_to_data) if path not in ['train','val']]
     train_data,val_data=train_test_split(data_paths,test_size=split)
 
-    print(train_data)
     for data_path in train_data:
         source_path = os.path.join(path_to_data,data_path)
         dest_path = os.path.join(train_path,data_path)
