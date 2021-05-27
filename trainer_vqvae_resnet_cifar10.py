@@ -321,4 +321,5 @@ def validation(val_loader,model):
     return losses.avg, recon_losses.avg, vq_losses.avg, kl_divs.avg, perplexities.avg
 
 if __name__ == '__main__':
+    torch.multiprocessing.set_start_method('spawn')
     main()
