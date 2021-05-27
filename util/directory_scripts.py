@@ -23,7 +23,7 @@ def train_val_split(path_to_data,split):
     os.makedirs(train_path)
     os.makedirs(val_path)
 
-    data_paths = os.listdir(path_to_data)
+    data_paths = [path for path in os.listdir(path_to_data) if path not in ['train','val']]
     train_data,val_data=train_test_split(data_paths,test_size=split)
 
     print(train_data)
