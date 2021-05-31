@@ -1,3 +1,9 @@
+### First attempt at making a model architecture for parameters 
+### Uses the RNN structure from the meeting on the 27.5.2021 with Moritz
+### with a depth of 2, an vq embedding layer and a normal vae embedding layer
+### cant be used for sampling, since we cant sample both layer coherently
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
