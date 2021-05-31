@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 from VQ_VAE.resnet_cifar10.rnn_vq_vae import VQConvRnnAE
 from util.average_meter import AverageMeter
 from util.saving import save_checkpoint
-from data.datasets.resnet_cifar10_dataset import resnet_cifar10_parameters_dataset
+from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_parameters_dataset
 
 
 default_data_storage = os.path.join('storage','models','ResNet','cifar10','resnet20')
@@ -99,9 +99,9 @@ def main():
     runs_start_at = args.runs_start_at
 
     # load train data 
-    training_data = resnet_cifar10_parameters_dataset(path_to_data=args.data_storage,train=True)
+    training_data = Resnet_cifar10_parameters_dataset(path_to_data=args.data_storage,train=True)
 
-    validation_data = resnet_cifar10_parameters_dataset(path_to_data=args.data_storage,train=False)
+    validation_data = Resnet_cifar10_parameters_dataset(path_to_data=args.data_storage,train=False)
 
     # put train data into DataLoader
     training_loader = DataLoader(training_data, 
