@@ -55,6 +55,24 @@ def stack_to_side(stacked_tensors):
             new_tensor[:,i*k_size:(i+1)*k_size,j*k_size:(j+1)*k_size] = stacked_tensors[i*second_dim+j] 
     return new_tensor
 
+def pad_layer(params,depth=64,number=64):
+    '''takes the params of a layer and padds them using zeros to 
+    number x depth x k_size x k_size '''
+    p_shape = params.shape
+    k_size = p_shape[2]
+    # add 0 - kernels for unit input size
+    if torch.cuda.is_available():
+        pad_vec = torch.zeros(number-p_shape[0],p_shape[1],k_size,k_size).cuda()
+    else:
+        pad_vec = torch.zeros(number-p_shape[0],p_shape[1],k_size,k_size)
+    params = torch.cat((params,pad_vec),dim=0)
+    p_shape = params.shape
+    # pad zeros to ending of param vector
+    if torch.cuda.is_available():
+        pad_vec = torch.zeros(p_shape[0],depth-p_shape[1],k_size,k_size).cuda()
+    else:
+        pad_vec = torch.zeros(p_shape[0],depth-p_shape[1],k_size,k_size)
+    params = torch.cat((params,pad_vec),dim=1)
 
 def side_to_stack(sided_tensors):
     pass
