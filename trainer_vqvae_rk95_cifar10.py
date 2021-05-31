@@ -14,7 +14,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 
-from VQ_VAE.rk95_gh.vq_vae import Model
+from models.VQ_VAE.rk95_gh.vq_vae import Model
 from util.average_meter import AverageMeter
 from util.saving import save_checkpoint
 

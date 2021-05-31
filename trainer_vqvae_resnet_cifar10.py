@@ -11,7 +11,7 @@ import torch.optim as optim
 
 from torch.utils.tensorboard import SummaryWriter
 
-from VQ_VAE.resnet_cifar10.rnn_vq_vae import VQConvRnnAE
+from models.parameter_learners.resnet_cifar10.rnn_vq_vae import VQConvRnnAE
 from util.average_meter import AverageMeter
 from util.saving import save_checkpoint
 from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_parameters_dataset

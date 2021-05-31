@@ -14,7 +14,7 @@ import torchvision.transforms as transforms
 
 from torch.utils.tensorboard import SummaryWriter
 
-from VQ_VAE.basic_gc.vq_vae import Model
+from models.VQ_VAE.basic_gc.vq_vae import Model
 from util.average_meter import AverageMeter
 from util.saving import save_checkpoint
 
