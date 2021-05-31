@@ -114,9 +114,14 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
                 if 'conv' in param_tensor:
                     if nr_layer == layer_number:  
                         params = state_dict[param_tensor]
+                        mask = torch.ones_like(params)
+
                         params = pad_layer(params,64,64)
+                        mask = pad_layer(mask,64,64)
+
                         params = stack_to_side(params)
-                        return params, arch
+                        mask = stack_to_side(mask)
+                        return params, mask, arch
                     else: 
                         nr_layer += 1
 
@@ -181,21 +186,21 @@ class Resnet_cifar10_parameters_dataset(Resnet_cifar10_dataset):
             path_to_params = self.paths_to_params_by_arch[2][index-self.length_r20-self.length_r32]
 
         parameters = []
+        masks = []
 
         state_dict = get_state_dict_from_checkpoint(path_to_params)
         for param_tensor in state_dict:
             if 'conv' in param_tensor:
                 params = state_dict[param_tensor]
+                mask = torch.ones_like(params)
+
                 params = pad_layer(params,64,64)
+                mask = pad_layer(mask,64,64)
+
                 params = stack_to_side(params)
+                mask = stack_to_side(mask)
+
                 parameters.append(params)
+                masks.append(mask)
         
-        # # add missing layers for smaller resnets 
-        # if arch == 'resnet20':
-        #     missing_layers = 8
-        #     for _ in range(missing_layers):
-        #         parameters.insert(7,torch.zeros(16,64,3,3))
-        # if arch == 'resnet32':
-        #     missing_layers = 4 
-        
-        return torch.stack(parameters), arch # pylint: disable=not-callable
+        return torch.stack(parameters), torch.stack(masks), arch # pylint: disable=not-callable

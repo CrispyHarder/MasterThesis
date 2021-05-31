@@ -218,7 +218,7 @@ def train_epoch(train_loader,model, optimizer, epoch):
     model.train()
 
     end = time.time()
-    for i, (data, arch) in enumerate(train_loader):
+    for i, (data, mask, arch) in enumerate(train_loader):
 
         # measure data loading time
         data_time.update(time.time() - end)
@@ -280,7 +280,7 @@ def validation(val_loader,model):
 
     end = time.time()
     with torch.no_grad():
-        for i, (data, arch) in enumerate(val_loader):
+        for i, (data, mask, arch) in enumerate(val_loader):
 
             data = data.cuda()
 
