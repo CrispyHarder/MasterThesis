@@ -1,5 +1,5 @@
 import torch
-from ResNet import resnet_cifar10 # pylint: disable=import-error
+from models.ResNet import resnet_cifar10 # pylint: disable=import-error
 
 def save_checkpoint(state, is_best=True, is_checkpoint=True, filename='checkpoint.pth.tar'):
     """
