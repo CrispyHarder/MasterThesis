@@ -3,7 +3,7 @@ import os
 import torch
 from torch.utils.data import Dataset
 from util.saving import get_state_dict_from_checkpoint # pylint: disable=import-error
-from util.data_reshaping import stack_to_side, pad_layer # pylint: disable=import-error
+from util.data_reshaping import stack_to_side, pad_layer, append_label_to_stacked # pylint: disable=import-error
 
 class Resnet_cifar10_dataset(Dataset):
     '''a parent class for any dataset containing parameters of resnet20,resnet32,resnet44 in order
@@ -27,7 +27,7 @@ class Resnet_cifar10_dataset(Dataset):
             path_to_data(str): path to the data
             train(bool): whether or train or validation data should be used'''
         super().__init__()
-
+        self.number_labels = 3
         self.path_to_data = path_to_data
         self.archs = ['resnet20','resnet32','resnet44']
         #check whether data from other model architectures is present
@@ -117,6 +117,7 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
                         mask = torch.ones_like(params)
 
                         params = pad_layer(params,64,64)
+                        params = append_label_to_stacked(params,arch,self.number_labels)
                         mask = pad_layer(mask,64,64)
 
                         params = stack_to_side(params)
@@ -195,6 +196,7 @@ class Resnet_cifar10_parameters_dataset(Resnet_cifar10_dataset):
                 mask = torch.ones_like(params)
 
                 params = pad_layer(params,64,64)
+                params = append_label_to_stacked(params,arch,self.number_labels)
                 mask = pad_layer(mask,64,64)
 
                 params = stack_to_side(params)

@@ -1,4 +1,7 @@
 import torch 
+import math
+
+from torch._C import TensorType 
 
 def stack_to_side(stacked_tensors):
     '''takes a stack of 3d tensors (so overall a 4d tensor) and reshapes them into a 
@@ -73,6 +76,57 @@ def pad_layer(params,depth=64,number=64):
     else:
         pad_vec = torch.zeros(p_shape[0],depth-p_shape[1],k_size,k_size)
     params = torch.cat((params,pad_vec),dim=1)
+
+def append_label_to_stacked(tensor,label,number_labels):
+    shape = tensor.shape
+    k_size = shape[-1]
+    number_kernels = shape[0]
+    number_slices_to_label = math.ceil(number_labels/(k_size**2))
+    index_position_slice = math.floor(label/(k_size**2))
+    index_position_width = label % k_size
+    index_position_height = (label % k_size**2) // k_size
+    one_cath_slice = torch.zeros(number_slices_to_label,k_size,k_size)
+    one_cath_slice[index_position_slice,index_position_width,index_position_height] = 1.0 
+    cath_slices = torch.stack([one_cath_slice for _ in range(number_kernels)])
+    tensor = torch.cat((tensor,cath_slices),dim=1)
+    return tensor
+
+def append_label_to_sided(tensor,k_size,label,number_labels):
+    '''UNUSED 
+    appends a label to a 3-dim tensor of sided kernels (i.e. a layer)
+    (see above stack to sided). This is done by adding a "one-hot-matrix" 
+    with a possible dim of 3. So to every kernel, that is one the "grid" a 2/3 dim
+    kernel is appended
+    Args:
+        tensor(tensor): the tensor of sided kernels in a layer
+        k_size(int): the original size of the kernels 
+        label(int): the label to append
+        number_labels(int): the total amount of labels
+    
+    Returns(tensor): the tensor with additonal depth for labels 
+    e.g.
+    for a matrix 
+    [[2,2],
+     [1,2]]
+    
+    [[0,1],
+     [0,0]] is appended, where this is for label = 1 '''
+    shape = tensor.shape
+    number_kernels = int((shape[-1]/k_size)**2)
+    number_slices_to_label = math.ceil(number_labels/(k_size**2))
+    index_position_slice = math.floor(label/(k_size**2))
+    index_position_width = label % k_size
+    index_position_height = (label % k_size**2) // k_size
+    one_cath_slice = torch.zeros(number_slices_to_label,k_size,k_size)
+    one_cath_slice[index_position_slice,index_position_width,index_position_height] = 1.0 
+    cath_slices = torch.stack([one_cath_slice for _ in range(number_kernels)])
+    if torch.cuda.is_available():
+        cath_slices = cath_slices.cuda()
+    cath_slices = stack_to_side(cath_slices)
+    return torch.cat((tensor,cath_slices),dim=0)
+
+def append_label_to_vec(vec,label,number_labels):
+    pass
 
 def side_to_stack(sided_tensors):
     pass
