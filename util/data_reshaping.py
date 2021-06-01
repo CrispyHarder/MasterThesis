@@ -3,6 +3,10 @@ import math
 
 from torch._C import TensorType 
 
+def tensor_to_cuda(tensor):
+    if torch.cuda.is_available():
+        tensor = tensor.cuda()
+
 def stack_to_side(stacked_tensors):
     '''takes a stack of 3d tensors (so overall a 4d tensor) and reshapes them into a 
     grid, by putting them side by side. This is done to use convolutions over 
@@ -88,6 +92,8 @@ def append_label_to_stacked(tensor,label,number_labels):
     one_cath_slice = torch.zeros(number_slices_to_label,k_size,k_size)
     one_cath_slice[index_position_slice,index_position_width,index_position_height] = 1.0 
     cath_slices = torch.stack([one_cath_slice for _ in range(number_kernels)])
+    if torch.cuda.is_available():
+        cath_slices = cath_slices.cuda()
     tensor = torch.cat((tensor,cath_slices),dim=1)
     return tensor
 
@@ -125,8 +131,21 @@ def append_label_to_sided(tensor,k_size,label,number_labels):
     cath_slices = stack_to_side(cath_slices)
     return torch.cat((tensor,cath_slices),dim=0)
 
-def append_label_to_vec(vec,label,number_labels):
-    pass
+def append_label_to_vec(b_vec,labels,number_labels):
+    '''appends labels to a batch of latent samples
+    Args:
+        b_vec(tensor): a batch of sampled latent vectors
+        labels(int): the labels to append
+        number_labels(int): the total amount of labels
+    
+    Returns(tensor):the batch of latents with labels appended
+    '''
+    eye = torch.eye(number_labels)
+    tensor_to_cuda(eye)
+    one_hots = torch.stack([eye[label] for label in labels])
+    print(one_hots)
+    b_vec = torch.cat((b_vec,one_hots),dim=1)
+    return b_vec
 
 def side_to_stack(sided_tensors):
     pass
