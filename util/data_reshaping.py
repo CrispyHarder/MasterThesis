@@ -80,6 +80,7 @@ def pad_layer(params,depth=64,number=64):
     else:
         pad_vec = torch.zeros(p_shape[0],depth-p_shape[1],k_size,k_size)
     params = torch.cat((params,pad_vec),dim=1)
+    return params
 
 def append_label_to_stacked(tensor,label,number_labels):
     shape = tensor.shape
