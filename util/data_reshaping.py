@@ -6,6 +6,7 @@ from torch._C import TensorType
 def tensor_to_cuda(tensor):
     if torch.cuda.is_available():
         tensor = tensor.cuda()
+    return tensor
 
 def stack_to_side(stacked_tensors):
     '''takes a stack of 3d tensors (so overall a 4d tensor) and reshapes them into a 
@@ -142,7 +143,7 @@ def append_label_to_vec(b_vec,labels,number_labels):
     Returns(tensor):the batch of latents with labels appended
     '''
     eye = torch.eye(number_labels)
-    tensor_to_cuda(eye)
+    eye = tensor_to_cuda(eye)
     one_hots = torch.stack([eye[label] for label in labels])
     print(one_hots)
     b_vec = torch.cat((b_vec,one_hots),dim=1)
