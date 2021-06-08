@@ -9,7 +9,7 @@ parser.add_argument('-all',default=False, action='store_true')
 def main():
     global args
     args = parser.parse_args()
-    if args.all():
+    if args.all:
         ds_tests = DatasetTests()
         ds_tests.test_all()
 
