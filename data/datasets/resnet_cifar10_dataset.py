@@ -92,39 +92,39 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
         self.length_r32 = len(self.paths_to_params_by_arch[1])
         self.length_r44 = len(self.paths_to_params_by_arch[2])
 
-        def __len__(self):
-            return self.length
+    def __len__(self):
+        return self.length
 
-        def __getitem__(self,index):
+    def __getitem__(self,index):
 
-            # first check which architecture the index belongs to and get path
-            if index < self.length_r20:
-                arch = 0 # 'resnet20'
-                path_to_params, layer_number = self.paths_to_params_by_arch[0][index]
-            elif index - self.length_r20 < self.length_r32:
-                arch = 1 # 'resnet32'
-                path_to_params, layer_number = self.paths_to_params_by_arch[1][index-self.length_r20]
-            else:
-                arch = 2 # 'resnet44'
-                path_to_params, layer_number = self.paths_to_params_by_arch[2][index-self.length_r20-self.length_r32]
+        # first check which architecture the index belongs to and get path
+        if index < self.length_r20:
+            arch = 0 # 'resnet20'
+            path_to_params, layer_number = self.paths_to_params_by_arch[0][index]
+        elif index - self.length_r20 < self.length_r32:
+            arch = 1 # 'resnet32'
+            path_to_params, layer_number = self.paths_to_params_by_arch[1][index-self.length_r20]
+        else:
+            arch = 2 # 'resnet44'
+            path_to_params, layer_number = self.paths_to_params_by_arch[2][index-self.length_r20-self.length_r32]
 
-            state_dict = get_state_dict_from_checkpoint(path_to_params)
-            nr_layer = 0
-            for param_tensor in state_dict:
-                if 'conv' in param_tensor:
-                    if nr_layer == layer_number:  
-                        params = state_dict[param_tensor]
-                        mask = torch.ones_like(params)
+        state_dict = get_state_dict_from_checkpoint(path_to_params)
+        nr_layer = 0
+        for param_tensor in state_dict:
+            if 'conv' in param_tensor:
+                if nr_layer == layer_number:  
+                    params = state_dict[param_tensor]
+                    mask = torch.ones_like(params)
 
-                        params = pad_layer(params,64,64)
-                        params = append_label_to_stacked(params,arch,self.number_labels)
-                        mask = pad_layer(mask,64,64)
+                    params = pad_layer(params,64,64)
+                    params = append_label_to_stacked(params,arch,self.number_labels)
+                    mask = pad_layer(mask,64,64)
 
-                        params = stack_to_side(params)
-                        mask = stack_to_side(mask)
-                        return params, mask, arch
-                    else: 
-                        nr_layer += 1
+                    params = stack_to_side(params)
+                    mask = stack_to_side(mask)
+                    return params, mask, arch
+                else: 
+                    nr_layer += 1
 
 
 
