@@ -1,8 +1,27 @@
+import argparse
 from tests.data import DataloaderTests, DatasetTests
 
-ds_tests = DatasetTests()
-ds_tests.test_all()
+parser = argparse.ArgumentParser(description='argparser for tests')
+parser.add_argument('--datasets',default=False, action='store_true')
+parser.add_argument('--dataloader',default=False, action='store_true')
+parser.add_argument('-all',default=False, action='store_true')
 
-dl_tests = DataloaderTests()
-dl_tests.test_all()
+def main():
+    global args
+    args = parser.parse_args()
+    if args.all():
+        ds_tests = DatasetTests()
+        ds_tests.test_all()
 
+        dl_tests = DataloaderTests()
+        dl_tests.test_all()
+        return
+    if args.datasets:
+        ds_tests = DatasetTests()
+        ds_tests.test_all()
+    if args.dataloader:
+        dl_tests = DataloaderTests()
+        dl_tests.test_all()
+
+if __name__ == "__main__":
+    main()
