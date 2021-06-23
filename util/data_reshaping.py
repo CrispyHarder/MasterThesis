@@ -2,7 +2,7 @@ from pickle import decode_long
 import torch 
 import math
 
-from torch._C import TensorType 
+from torch._C import TensorType, device 
 
 def tensor_to_cuda(tensor):
     if torch.cuda.is_available():
@@ -38,7 +38,7 @@ def stack_to_side(stacked_tensors):
      [5,5,7,7],
      [6,6,8,8]]
       '''
-      
+    device = stacked_tensors.device
     shape = stacked_tensors.shape
     assert shape[2]==shape[3] 
     depth = shape[1]
@@ -56,12 +56,12 @@ def stack_to_side(stacked_tensors):
     if shape[0] == 64:
         first_dim = 8
         second_dim = 8 
-    new_tensor = torch.zeros(depth,k_size*first_dim,k_size*second_dim)
+    new_tensor = torch.zeros(depth, k_size*first_dim, k_size*second_dim, device=device)
     if torch.cuda.is_available():
         new_tensor = new_tensor.cuda()
     for i in range(first_dim):
         for j in range(second_dim):
-            new_tensor[:,i*k_size:(i+1)*k_size,j*k_size:(j+1)*k_size] = stacked_tensors[i*second_dim+j] 
+            new_tensor[:,i*k_size:(i+1)*k_size, j*k_size:(j+1)*k_size] = stacked_tensors[i*second_dim+j] 
     return new_tensor
 
 def pad_layer(params, depth=64, number=64):
