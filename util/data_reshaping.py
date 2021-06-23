@@ -2,8 +2,6 @@ from pickle import decode_long
 import torch 
 import math
 
-from torch._C import TensorType, device 
-
 def tensor_to_cuda(tensor):
     if torch.cuda.is_available():
         tensor = tensor.cuda()
