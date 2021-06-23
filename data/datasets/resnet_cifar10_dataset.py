@@ -68,23 +68,23 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
         Args:
             path_to_data(str): path to the data
             train(bool): whether or train or validation data should be used'''
-        super().__init__(path_to_data,train)
+        super().__init__(path_to_data, train)
 
         # get a list to the files with with the model states containing the params
         # for every of the 3 model archs a list
         self.length = 0
         
-        self.paths_to_params_by_arch = [[],[],[]]
+        self.paths_to_params_by_arch = [[], [], []]
         for i,arch in enumerate(os.listdir(self.path_to_data)):
-            path_to_arch = os.path.join(self.path_to_data,arch,self.mode)
+            path_to_arch = os.path.join(self.path_to_data, arch,self.mode)
             for run in os.listdir(path_to_arch):
-                path_to_params = os.path.join(path_to_arch,run,'model.th')
+                path_to_params = os.path.join(path_to_arch, run, 'model.th')
                 layer_number = 0
                 if os.path.exists(path_to_params):
                     state_dict = get_state_dict_from_checkpoint(path_to_params)
                     for param_tensor in state_dict:
                         if 'conv' in param_tensor:
-                            self.paths_to_params_by_arch[i].append((path_to_params,layer_number))
+                            self.paths_to_params_by_arch[i].append((path_to_params, layer_number))
                             self.length += 1
                             layer_number += 1 
         
@@ -108,7 +108,7 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
             arch = 2 # 'resnet44'
             path_to_params, layer_number = self.paths_to_params_by_arch[2][index-self.length_r20-self.length_r32]
 
-        state_dict = get_state_dict_from_checkpoint(path_to_params)
+        state_dict = get_state_dict_from_checkpoint(path_to_params, map_location='cpu')
         nr_layer = 0
         for param_tensor in state_dict:
             if 'conv' in param_tensor:
@@ -116,9 +116,9 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
                     params = state_dict[param_tensor]
                     mask = torch.ones_like(params)
 
-                    params = pad_layer(params,64,64)
-                    params = append_label_to_stacked(params,arch,self.number_labels)
-                    mask = pad_layer(mask,64,64)
+                    params = pad_layer(params, 64, 64)
+                    params = append_label_to_stacked(params, arch, self.number_labels)
+                    mask = pad_layer(mask, 64, 64)
 
                     params = stack_to_side(params)
                     mask = stack_to_side(mask)
@@ -189,15 +189,15 @@ class Resnet_cifar10_parameters_dataset(Resnet_cifar10_dataset):
         parameters = []
         masks = []
 
-        state_dict = get_state_dict_from_checkpoint(path_to_params)
+        state_dict = get_state_dict_from_checkpoint(path_to_params,map_location='cpu')
         for param_tensor in state_dict:
             if 'conv' in param_tensor:
                 params = state_dict[param_tensor]
                 mask = torch.ones_like(params)
 
-                params = pad_layer(params,64,64)
-                params = append_label_to_stacked(params,arch,self.number_labels)
-                mask = pad_layer(mask,64,64)
+                params = pad_layer(params, 64, 64)
+                params = append_label_to_stacked(params, arch,self.number_labels)
+                mask = pad_layer(mask, 64, 64)
 
                 params = stack_to_side(params)
                 mask = stack_to_side(mask)
