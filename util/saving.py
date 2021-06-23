@@ -11,12 +11,14 @@ def save_checkpoint(state, is_best=True, is_checkpoint=True, filename='checkpoin
         if is_best:
             torch.save(state, filename)
 
-def get_state_dict_from_checkpoint(checkpoint_path):
+def get_state_dict_from_checkpoint(checkpoint_path, map_location=None):
     '''loads the state dict from a given checkpoint path'''
-    if torch.cuda.is_available():
+    if map_location:
+        checkpoint = torch.load(checkpoint_path, map_location=map_location)
+    elif torch.cuda.is_available():
         checkpoint = torch.load(checkpoint_path)
     else:
-        checkpoint = torch.load(checkpoint_path,map_location=torch.device('cpu'))
+        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
     return checkpoint['state_dict']
 
 def load_model_from_checkpoint(checkpoint_path, model_type, dataset_name):

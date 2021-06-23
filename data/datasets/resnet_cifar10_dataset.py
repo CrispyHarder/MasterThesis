@@ -51,7 +51,7 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
     '''a class for layer parameters of resnet20,resnet32,resnet44 in order
     to feed into a data loader'''
 
-    def __init__(self,path_to_data,train):
+    def __init__(self, path_to_data,train):
         '''path to data is a path, whose directories contain the 
         directories containing the paths:
         paths_to_data
