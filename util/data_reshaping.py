@@ -1,3 +1,4 @@
+from pickle import decode_long
 import torch 
 import math
 
@@ -78,7 +79,8 @@ def pad_layer(params, depth=64, number=64):
     params = torch.cat((params, pad_vec), dim=1)
     return params
 
-def append_label_to_stacked(tensor,label,number_labels):
+def append_label_to_stacked(tensor, label, number_labels):
+    device = tensor.device
     shape = tensor.shape
     k_size = shape[-1]
     number_kernels = shape[0]
@@ -86,12 +88,11 @@ def append_label_to_stacked(tensor,label,number_labels):
     index_position_slice = math.floor(label/(k_size**2))
     index_position_width = label % k_size
     index_position_height = (label % k_size**2) // k_size
-    one_cath_slice = torch.zeros(number_slices_to_label,k_size,k_size)
-    one_cath_slice[index_position_slice,index_position_width,index_position_height] = 1.0 
+    one_cath_slice = torch.zeros(number_slices_to_label, k_size, k_size)
+    one_cath_slice[index_position_slice, index_position_width, index_position_height] = 1.0 
     cath_slices = torch.stack([one_cath_slice for _ in range(number_kernels)])
-    if torch.cuda.is_available():
-        cath_slices = cath_slices.cuda()
-    tensor = torch.cat((tensor,cath_slices),dim=1)
+    cath_slices = cath_slices.to(device)
+    tensor = torch.cat((tensor, cath_slices), dim=1)
     return tensor
 
 def append_label_to_sided(tensor,k_size,label,number_labels):
