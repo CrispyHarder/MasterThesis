@@ -50,7 +50,7 @@ class DataloaderTests(unittest.TestCase):
         from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters_dataset # pylint: disable=all
         path = os.path.join('storage','models','ResNet','cifar10')
         ds = Resnet_cifar10_layer_parameters_dataset(path,train=True) 
-        dl = DataLoader(ds,2,num_workers=self.num_workers,pin_memory=True,shuffle=True)
+        dl = DataLoader(ds,2,num_workers=self.num_workers,pin_memory=False,shuffle=True)
         for output in enumerate(dl):
             pass 
         print('test_resnet_cifar10_layer_parameters dataloader working')
