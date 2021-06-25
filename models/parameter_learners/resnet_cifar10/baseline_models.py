@@ -5,95 +5,130 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions.normal import Normal
-from torch.distributions import kl, kl_divergence
-# from .types_ import *
+from models.VQ_VAE.basic_gc.vq_vae import VectorQuantizer, VectorQuantizerEMA
+from .types_ import *
 
+class ResidualIntermediateBlock(nn.Module):
+    '''a building element to have before (encoder) or after (decoder) down/upsamplings 
+    to make the network deeper. They keep the spatial dimensions of the input, so input dim = output dim'''
+    def __init__(self, in_channels, kernel_size, padding):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=kernel_size, stride=1, padding=padding, bias=False)
+        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.conv2 = nn.Conv2d(in_channels, in_channels, kernel_size=kernel_size, stride=1, padding=padding, bias=False)
+        self.bn2 = nn.BatchNorm2d(in_channels)
+    
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += x
+        out = F.relu(out)
+        return out
 
-class VanillaVAE(nn.Module):
-
+class LayerVAEresC10(nn.Module):
 
     def __init__(self,
-                 in_channels: int,
-                 latent_dim: int,
-                 hidden_dims: list = None,
-                 **kwargs) -> None:
-        super(VanillaVAE, self).__init__()
+                in_channels: int,
+                latent_dim: int,
+                hidden_dims: list = None,
+                pre_interm_layers: int = 1,
+                interm_layers: int = 1,
+                sqrt_number_kernels: int = 8,
+                **kwargs) -> None:
+        super().__init__()
 
+        self.pre_int_layers = pre_interm_layers > 0
+        self.int_layers = interm_layers > 0
         self.latent_dim = latent_dim
-
-        modules = []
         if hidden_dims is None:
-            hidden_dims = [32, 64, 128, 256, 512]
-
-        # Build Encoder
-        for h_dim in hidden_dims:
-            modules.append(
-                nn.Sequential(
-                    nn.Conv2d(in_channels, out_channels=h_dim,
-                              kernel_size= 3, stride= 2, padding  = 1),
-                    nn.BatchNorm2d(h_dim),
-                    nn.LeakyReLU())
-            )
-            in_channels = h_dim
-
-        self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1]*4, latent_dim)
-
-
-        # Build Decoder
+            hidden_dims = [128,256,512]
+        
+        #pre-intermediate layers 
         modules = []
+        for _ in range(pre_interm_layers):
+            modules.append(ResidualIntermediateBlock(in_channels,kernel_size=3,padding=1))
+        self.pre_intermediate_layer = nn.Sequential(*modules)
+        
+        #So called Embedding layer, which tries to detect the convolutions in the layers
+        self.embedding_layer = nn.Sequential(
+                                nn.Conv2d(in_channels,hidden_dims[0],
+                                    kernel_size=3, stride=3),
+                                nn.BatchNorm2d(hidden_dims[0]))
+        
+        #Intermediate layer which manipulates the "embedded" kernels
+        modules = []
+        for _ in range(interm_layers):
+            modules.append(ResidualIntermediateBlock(hidden_dims[0], kernel_size=3,padding=1))
+        self.enc_intermediate_layer = nn.Sequential(*modules)
+        
+        # Combiantion layer, or downsize layer nr 2  
+        self.combination_layer = nn.Sequential(
+                                    nn.Conv2d(hidden_dims[0],hidden_dims[1],
+                                        kernel_size=sqrt_number_kernels, stride=1),
+                                    nn.BatchNorm2d(hidden_dims[1]),
+                                    nn.Tanh())
 
-        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
+        self.fc_enc = nn.Sequential(
+                            nn.Linear(hidden_dims[1], hidden_dims[2]),
+                            nn.LeakyReLU())          
+        self.fc_mu = nn.Linear(hidden_dims[2], latent_dim)
+        self.fc_var = nn.Linear(hidden_dims[2], latent_dim) 
 
-        hidden_dims.reverse()
+        #Decoder 
+        self.fc_dec = nn.Sequential(
+                            nn.Linear(latent_dim, hidden_dims[1]),
+                            nn.LeakyReLU())   
 
-        for i in range(len(hidden_dims) - 1):
-            modules.append(
-                nn.Sequential(
-                    nn.ConvTranspose2d(hidden_dims[i],
-                                       hidden_dims[i + 1],
-                                       kernel_size=3,
-                                       stride = 2,
-                                       padding=1,
-                                       output_padding=1),
-                    nn.BatchNorm2d(hidden_dims[i + 1]),
-                    nn.LeakyReLU())
-            )
+        self.decombination_layer = nn.Sequential(
+                                    nn.ConvTranspose2d(hidden_dims[1],hidden_dims[0],
+                                        kernel_size=sqrt_number_kernels, stride=1),
+                                    nn.BatchNorm2d(hidden_dims[0]),
+                                    nn.Tanh())   
+        
+        modules = []
+        for _ in range(interm_layers):
+            modules.append(ResidualIntermediateBlock(hidden_dims[0],kernel_size=3,padding=1))
+        self.dec_intermediate = nn.Sequential(*modules)
 
+        self.dec_embedding_layer = nn.Sequential(
+                                nn.ConvTranspose2d(hidden_dims[0],in_channels,
+                                    kernel_size=3, stride=3),
+                                nn.BatchNorm2d(in_channels))
 
-
-        self.decoder = nn.Sequential(*modules)
-
+        #pre-intermediate layers 
+        modules = []
+        for _ in range(pre_interm_layers):
+            modules.append(ResidualIntermediateBlock(in_channels,kernel_size=3,padding=1))
+        self.post_intermediate_layer = nn.Sequential(*modules)
+        
         self.final_layer = nn.Sequential(
-                            nn.ConvTranspose2d(hidden_dims[-1],
-                                               hidden_dims[-1],
-                                               kernel_size=3,
-                                               stride=2,
-                                               padding=1,
-                                               output_padding=1),
-                            nn.BatchNorm2d(hidden_dims[-1]),
-                            nn.LeakyReLU(),
-                            nn.Conv2d(hidden_dims[-1], out_channels= 3,
-                                      kernel_size= 3, padding= 1),
-                            nn.Tanh())
+                                nn.Conv2d(in_channels, in_channels,
+                                    kernel_size=3, stride=1, padding=1),
+                                nn.BatchNorm2d(in_channels),
+                                nn.Tanh())
+        
 
-    def encode(self, input: torch.Tensor) -> list(torch.Tensor):
+    def encode(self, input):
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        result = self.encoder(input)
-        result = torch.flatten(result, start_dim=1)
+        result = input
+        if self.pre_int_layers:
+            result = self.pre_intermediate_layer(result) + result
+        result = self.embedding_layer(result)
+        if self.int_layers:
+            result = self.enc_intermediate_layer(result) + result
+        result = self.combination_layer(result)
+        result = torch.squeeze(result)
+        result = self.fc_enc(result)
 
         # Split the result into mu and var components
         # of the latent Gaussian distribution
         mu = self.fc_mu(result)
         log_var = self.fc_var(result)
-
         return [mu, log_var]
 
     def decode(self, z: torch.Tensor) -> torch.Tensor:
@@ -103,9 +138,15 @@ class VanillaVAE(nn.Module):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        result = self.decoder_input(z)
-        result = result.view(-1, 512, 2, 2)
-        result = self.decoder(result)
+        result = self.fc_dec(z)
+        result = torch.unsqueeze(result, dim=2)
+        result = torch.unsqueeze(result, dim=2)
+        result = self.decombination_layer(result)
+        if self.int_layers:
+            result = self.dec_intermediate(result) + result
+        result = self.dec_embedding_layer(result)
+        if self.pre_int_layers:
+            result = self.post_intermediate_layer(result) + result
         result = self.final_layer(result)
         return result
 
@@ -121,14 +162,15 @@ class VanillaVAE(nn.Module):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: torch.Tensor, **kwargs) -> list(torch.Tensor):
+    def forward(self, input, **kwargs):
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return  [self.decode(z), input, mu, log_var]
 
     def loss_function(self,
-                      *args,
-                      **kwargs) -> dict:
+                    mask,
+                    *args,
+                    **kwargs) -> dict:
         """
         Computes the VAE loss function.
         KL(N(\mu, \sigma), N(0, 1)) = \log \frac{1}{\sigma} + \frac{\sigma^2 + \mu^2}{2} - \frac{1}{2}
@@ -142,8 +184,11 @@ class VanillaVAE(nn.Module):
         log_var = args[3]
 
         kld_weight = kwargs['M_N'] # Account for the minibatch samples from the dataset
-        recons_loss =F.mse_loss(recons, input)
 
+        # mask out the reconstructed values which are not taken into account
+        recons = recons * mask
+        recons_loss =F.mse_loss(recons, input, reduction='sum')
+        recons_loss = recons_loss * (1/torch.sum(mask))
 
         kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
 
@@ -176,3 +221,163 @@ class VanillaVAE(nn.Module):
         """
 
         return self.forward(x)[0]
+
+
+class LayerVQVAEresC10(nn.Module):
+
+    def __init__(self,
+                in_channels: int,
+                embedding_dim: int,
+                num_embeddings: int,
+                commitment_cost: float,
+                decay: float,
+                hidden_dims: list = None,
+                pre_interm_layers: int = 1,
+                interm_layers: int = 1,
+                sqrt_number_kernels: int = 8,
+                **kwargs) -> None:
+        super().__init__()
+
+        self.pre_int_layers = pre_interm_layers > 0
+        self.int_layers = interm_layers > 0
+
+        if hidden_dims is None:
+            hidden_dims = [256]
+        
+        #pre-intermediate layers 
+        modules = []
+        for _ in range(pre_interm_layers):
+            modules.append(ResidualIntermediateBlock(in_channels,kernel_size=3,padding=1))
+        self.pre_intermediate_layer = nn.Sequential(*modules)
+        
+        #So called Embedding layer, which tries to detect the convolutions in the layers
+        self.embedding_layer = nn.Sequential(
+                                nn.Conv2d(in_channels,hidden_dims[0],
+                                    kernel_size=3, stride=3),
+                                nn.BatchNorm2d(hidden_dims[0]))
+        
+        #Intermediate layer which manipulates the "embedded" kernels
+        modules = []
+        for _ in range(interm_layers):
+            modules.append(ResidualIntermediateBlock(hidden_dims[0], kernel_size=3,padding=1))
+        self.enc_intermediate_layer = nn.Sequential(*modules)
+        
+        self._pre_vq_conv = nn.Conv2d(hidden_dims[0],embedding_dim,kernel_size=3,stride=1,padding=1)
+
+        if decay > 0.0 :
+            self._vq_vae = VectorQuantizerEMA(num_embeddings, embedding_dim, 
+                                              commitment_cost, decay)
+        else:
+            self._vq_vae = VectorQuantizer(num_embeddings, embedding_dim,
+                                           commitment_cost)  
+      
+        #Decoder
+        self._post_vq_conv = nn.Conv2d(embedding_dim,hidden_dims[0],kernel_size=3,padding=1)
+        modules = []
+        for _ in range(interm_layers):
+            modules.append(ResidualIntermediateBlock(hidden_dims[0],kernel_size=3,padding=1))
+        self.dec_intermediate = nn.Sequential(*modules)
+
+        self.dec_embedding_layer = nn.Sequential(
+                                nn.ConvTranspose2d(hidden_dims[0],in_channels,
+                                    kernel_size=3, stride=3),
+                                nn.BatchNorm2d(in_channels))
+
+        #pre-intermediate layers 
+        modules = []
+        for _ in range(pre_interm_layers):
+            modules.append(ResidualIntermediateBlock(in_channels,kernel_size=3,padding=1))
+        self.post_intermediate_layer = nn.Sequential(*modules)
+        
+        self.final_layer = nn.Sequential(
+                                nn.Conv2d(in_channels, in_channels,
+                                    kernel_size=3, stride=1, padding=1),
+                                nn.BatchNorm2d(in_channels),
+                                nn.Tanh())
+        
+
+    def encode(self, input):
+        """
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """
+        result = input
+        if self.pre_int_layers:
+            result = self.pre_intermediate_layer(result) + result
+        result = self.embedding_layer(result)
+        if self.int_layers:
+            result = self.enc_intermediate_layer(result) + result
+        result = self._pre_vq_conv(result)
+        print(result.shape)
+        loss, quantized, perplexity, _ = self._vq_vae(result)
+        print(quantized.shape)
+        return [loss, quantized, perplexity]
+
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        """
+        Maps the given latent codes
+        onto the image space.
+        :param z: (Tensor) [B x D]
+        :return: (Tensor) [B x C x H x W]
+        """
+
+        result = self._post_vq_conv(z)
+        print(result.shape)
+        if self.int_layers:
+            result = self.dec_intermediate(result) + result
+        result = self.dec_embedding_layer(result)
+        print(result.shape)
+        if self.pre_int_layers:
+            result = self.post_intermediate_layer(result) + result
+        print(result.shape)
+        result = self.final_layer(result)
+        return result
+
+    def forward(self, input):
+        vq_loss, quantized, perplexity = self.encode(input)
+        recon = self.decode(quantized)
+        return  vq_loss, recon, perplexity
+
+    def loss_function(self,
+                    input,
+                    mask,
+                    recons,
+                    vq_loss
+                    ) -> dict:
+
+        # mask out the reconstructed values which are not taken into account
+        recons = recons * mask
+        recons_loss =F.mse_loss(recons, input, reduction='sum')
+        recons_loss = recons_loss * (1/torch.sum(mask))
+
+        loss = recons_loss + vq_loss
+        return {'loss': loss, 'Reconstruction_Loss':recons_loss, 'vq_loss':vq_loss}
+
+    def sample(self,
+               num_samples:int,
+               current_device: int, **kwargs) -> torch.Tensor:
+        """
+        Samples from the latent space and return the corresponding
+        image space map.
+        :param num_samples: (Int) Number of samples
+        :param current_device: (Int) Device to run the model
+        :return: (Tensor)
+        """
+        z = torch.randn(num_samples,
+                        self.latent_dim)
+
+        z = z.to(current_device)
+
+        samples = self.decode(z)
+        return samples
+
+    def generate(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
+        """
+        Given an input image x, returns the reconstructed image
+        :param x: (Tensor) [B x C x H x W]
+        :return: (Tensor) [B x C x H x W]
+        """
+
+        return self.forward(x)[1]
