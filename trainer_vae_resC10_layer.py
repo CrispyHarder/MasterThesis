@@ -79,7 +79,7 @@ parser.add_argument('--save-dir', dest='save_dir',
                     default=default_save_dir, type=str)
 
 # prints/outputs in console
-parser.add_argument('--print-freq', '-p', default=50, type=int,
+parser.add_argument('--print-freq', '-p', default=400, type=int,
                     metavar='N', help='print frequency (default: 50)')
 
 
@@ -272,7 +272,6 @@ def validation(val_loader,model):
             loss = loss_dict['loss']
             recon_loss = loss_dict['Reconstruction_Loss']
             kl_div = loss_dict['KLD']
-            loss.backward()
 
             loss = loss.float()
             recon_loss = recon_loss.float()
