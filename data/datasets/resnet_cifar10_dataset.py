@@ -9,7 +9,7 @@ class Resnet_cifar10_dataset(Dataset):
     '''a parent class for any dataset containing parameters of resnet20,resnet32,resnet44 in order
     to feed into a data loader'''
 
-    def __init__(self,path_to_data,train):
+    def __init__(self,path_to_data,train,use_labels=False):
         '''path to data is a path, whose directories contain the 
         directories containing the paths:
         paths_to_data
@@ -27,6 +27,7 @@ class Resnet_cifar10_dataset(Dataset):
             path_to_data(str): path to the data
             train(bool): whether or train or validation data should be used'''
         super().__init__()
+        self.use_labels = use_labels
         self.number_labels = 3
         self.path_to_data = path_to_data
         self.archs = ['resnet20','resnet32','resnet44']
@@ -117,8 +118,10 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
                     mask = torch.ones_like(params)
 
                     params = pad_layer(params, 64, 64)
-                    params = append_label_to_stacked(params, arch, self.number_labels)
                     mask = pad_layer(mask, 64, 64)
+                    if self.use_labels:
+                        params = append_label_to_stacked(params, arch, self.number_labels)
+                        # also mask
 
                     params = stack_to_side(params)
                     mask = stack_to_side(mask)
@@ -196,8 +199,10 @@ class Resnet_cifar10_parameters_dataset(Resnet_cifar10_dataset):
                 mask = torch.ones_like(params)
 
                 params = pad_layer(params, 64, 64)
-                params = append_label_to_stacked(params, arch,self.number_labels)
                 mask = pad_layer(mask, 64, 64)
+                if self.use_labels:
+                    params = append_label_to_stacked(params, arch,self.number_labels)
+                    # also mask
 
                 params = stack_to_side(params)
                 mask = stack_to_side(mask)
