@@ -47,7 +47,7 @@ parser.add_argument('-lr', '--learning_rate', default=1e-3, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--weight_kld', default=1.0 , type=float,
                     help='''the weight for the kld''')
-                    
+
 # Model architecture
 parser.add_argument('--arch', default='baseline', type=str,
                     help='The model to be used(dummy argument for now)')
@@ -214,7 +214,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
         optimizer.zero_grad()
 
         data_recon, input, mu, log_var = model(data)
-        loss_dict = model.loss_function(mask,data_recon, input, mu, log_var)
+        loss_dict = model.loss_function(mask,data_recon, input, mu, log_var,M_N=args.weight_kld)
         loss = loss_dict['loss']
         recon_loss = loss_dict['Reconstruction_Loss']
         kl_div = loss['KLD']
@@ -268,7 +268,7 @@ def validation(val_loader,model):
 
             # compute output
             data_recon, input, mu, log_var = model(data)
-            loss_dict = model.loss_function(mask,data_recon, input, mu, log_var)
+            loss_dict = model.loss_function(mask,data_recon, input, mu, log_var,M_N=args.weight_kld)
             loss = loss_dict['loss']
             recon_loss = loss_dict['Reconstruction_Loss']
             kl_div = loss['KLD']
