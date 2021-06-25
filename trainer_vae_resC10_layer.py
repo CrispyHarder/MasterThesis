@@ -45,7 +45,9 @@ parser.add_argument('--not_verbose', default=False, action='store_true',
 # optimizer configuration/ loss function specifics
 parser.add_argument('-lr', '--learning_rate', default=1e-3, type=float,
                     metavar='LR', help='initial learning rate')
-
+parser.add_argument('--weight_kld', default=1.0 , type=float,
+                    help='''the weight for the kld''')
+                    
 # Model architecture
 parser.add_argument('--arch', default='baseline', type=str,
                     help='The model to be used(dummy argument for now)')
