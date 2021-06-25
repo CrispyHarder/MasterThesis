@@ -18,7 +18,7 @@ from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters
 
 
 default_data_storage = os.path.join('storage','models','ResNet','cifar10')
-default_save_dir = os.path.join('storage','models','VQVAE','resnet_cifar10','layer')
+default_save_dir = os.path.join('storage','models','VAE','resnet_cifar10','layer')
 
 parser = argparse.ArgumentParser(description='Layerwise VAE for Resnets trained on CIFAR10 in pytorch')
 
@@ -45,13 +45,6 @@ parser.add_argument('--not_verbose', default=False, action='store_true',
 # optimizer configuration/ loss function specifics
 parser.add_argument('-lr', '--learning_rate', default=1e-3, type=float,
                     metavar='LR', help='initial learning rate')
-parser.add_argument('--commitment_cost', default=0.25, type=float,
-                    help='momentum')
-parser.add_argument('--decay', default=0.99, type=float,
-                    help='''decay (default: 0.99) for the moving ) 
-                    average update of embeddings. If decay is used, 
-                    the EMA vq model is used instead of the standart one 
-                    from the paper''')
 
 # Model architecture
 parser.add_argument('--arch', default='baseline', type=str,
@@ -68,7 +61,7 @@ parser.add_argument('--pre_interm_layers', default=1, type=int,
 parser.add_argument('--interm_layers', default=1, type=int,
                     help='''The number of intermediate layers to make 
                     the network deeper''') 
-parser.add_argument('--sqrt_number_kernels', default=64, type=int,
+parser.add_argument('--sqrt_number_kernels', default=8, type=int,
                     help='''a parameter for the network depending on the number
                     of filters per layer''')          
 
