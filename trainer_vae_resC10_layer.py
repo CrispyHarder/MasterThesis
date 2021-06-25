@@ -217,7 +217,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
         loss_dict = model.loss_function(mask,data_recon, input, mu, log_var,M_N=args.weight_kld)
         loss = loss_dict['loss']
         recon_loss = loss_dict['Reconstruction_Loss']
-        kl_div = loss['KLD']
+        kl_div = loss_dict['KLD']
         loss.backward()
 
         optimizer.step()
