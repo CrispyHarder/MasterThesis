@@ -1,4 +1,5 @@
 import torch
+import os 
 import json
 from models.ResNet import resnet_cifar10 # pylint: disable=import-error
 
@@ -32,7 +33,8 @@ def load_model_from_checkpoint(checkpoint_path, model_type, dataset_name):
             model.cuda()  
         return model
 
-def save_training_hparams(args):
+def save_training_hparams(args,path):
+    save_path = os.path.join(path,'hyperparameters.json')
     unimportant_list = ['data_storage','device','workers',
     'print_freq','resume','evaluate','pretrained','half','save_dir',
     'save_every','nr_runs','runs_start_at']
@@ -40,11 +42,12 @@ def save_training_hparams(args):
     for arg in vars(args):
         if arg not in unimportant_list:
             dik[arg] = getattr(args, arg)
-    with open('hyperparameters.json','w') as file:
+    with open(save_path,'w') as file:
         json.dump(dik,file,indent="")
 
-def save_dict_values(dik,name='results'):
-    with open(name+'.json','w') as file:
+def save_dict_values(dik,path, name='results'):
+    save_path = os.path.join(path,name)
+    with open(save_path+'.json','w') as file:
         json.dump(dik,file, indent="")
 
 

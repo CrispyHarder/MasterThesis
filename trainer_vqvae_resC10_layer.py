@@ -147,7 +147,7 @@ def main():
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
-        save_training_hparams(args)
+        save_training_hparams(args,save_dir_run)
 
         for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
             best_loss = 100000
@@ -187,7 +187,8 @@ def main():
         # save the hyperparams using the writer
         save_dict_values({'hparam/best_val_loss':best_loss,
                             'hparam/val_loss':val_loss,
-                            'hparam/val_loss_recon':val_recon_loss})
+                            'hparam/val_loss_recon':val_recon_loss},
+                            save_dir_run)
 
         # empty the cache of the writer into the directory 
         writer.flush()
