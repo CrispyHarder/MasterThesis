@@ -155,14 +155,14 @@ def main():
                             'in_channels':args.in_channels,
                             'embedding dim': args.embedding_dim,
                             'num embeddings': args.num_embeddings,
-                            'hidden_dims':args.hidden_dims,
+                            #'hidden_dims':args.hidden_dims,
                             'pre_interm_layers':args.pre_interm_layers,
                             'interm_layers':args.interm_layers,
                             'nr_run':nr_run,
                             'sqrt_number_kernels':args.sqrt_number_kernels},
                             {'start time':time.time()})
 
-        for epoch in range (args.start_epoch, args.start_epoch+args.epochs):
+        for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
             best_loss = 100000
 
             # perform training for one epoch
