@@ -251,7 +251,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
         losses.update(loss.item(), data.size(0))
         recon_losses.update(recon_loss.item(), data.size(0))
         vq_losses.update(vq_loss.item(), data.size(0))
-        perplexities.update(perplexity.item(), data.size())
+        perplexities.update(perplexity.item(), data.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -291,7 +291,7 @@ def validation(val_loader, model):
 
             # compute output
             vq_loss, data_recon, perplexity = model(data)
-            loss_dict = model.loss_function(input, mask, data_recon, vq_loss)
+            loss_dict = model.loss_function(data, mask, data_recon, vq_loss)
             loss = loss_dict['loss']
             recon_loss = loss_dict['Reconstruction_Loss']
 
@@ -304,7 +304,7 @@ def validation(val_loader, model):
             losses.update(loss.item(), data.size(0))
             recon_losses.update(recon_loss.item(), data.size(0))
             vq_losses.update(vq_loss.item(), data.size(0))
-            perplexities.update(perplexity.item(), data.size())
+            perplexities.update(perplexity.item(), data.size(0))
 
             # measure elapsed time
             batch_time.update(time.time() - end)

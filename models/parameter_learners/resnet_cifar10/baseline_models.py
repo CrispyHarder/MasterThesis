@@ -345,8 +345,6 @@ class LayerVQVAEresC10(nn.Module):
 
         # mask out the reconstructed values which are not taken into account
         recons = recons * mask
-        print(recons.shape)
-        print(input.shape)
         recons_loss = F.mse_loss(recons, input, reduction='sum')
         recons_loss = recons_loss * (1/torch.sum(mask))
 
