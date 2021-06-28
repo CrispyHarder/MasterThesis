@@ -53,7 +53,7 @@ parser.add_argument('--arch', default='baseline', type=str,
                     help='The model to be used(dummy argument for now)')
 parser.add_argument('--in_channels', default=64, type=int,
                     help='''The number of channels of the inputs ''') 
-parser.add_argument('--hidden_dims', default=[128,256,512], type=int,
+parser.add_argument('--hidden_dims', default=[128,256,512], type=list,
                     help='''The dimensions of the hidden layers''')  
 parser.add_argument('--latent_dim', default=64, type=int,
                     help='''The dimension of the latent space ''') 
