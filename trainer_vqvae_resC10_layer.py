@@ -160,7 +160,7 @@ def main():
                             'interm_layers':args.interm_layers,
                             'nr_run':nr_run,
                             'sqrt_number_kernels':args.sqrt_number_kernels},
-                            {'hparam/start time':time.time()},
+                            metric_dict={},
                             run_name=str(nr_run))
 
         for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
