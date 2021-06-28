@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from models.parameter_learners.resnet_cifar10.baseline_models import LayerVQVAEresC10
 from util.average_meter import AverageMeter
-from util.saving import save_checkpoint
+from util.saving import save_checkpoint,save_training_hparams,save_dict_values
 from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters_dataset
 
 
@@ -147,21 +147,7 @@ def main():
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
-        writer.add_hparams({'batch_size':args.batch_size,
-                            'lr':args.learning_rate,
-                            'commitment cost': args.commitment_cost,
-                            'decay': args.decay, 
-                            'model':args.arch,
-                            'in_channels':args.in_channels,
-                            'embedding dim': args.embedding_dim,
-                            'num embeddings': args.num_embeddings,
-                            #'hidden_dims':args.hidden_dims,
-                            'pre_interm_layers':args.pre_interm_layers,
-                            'interm_layers':args.interm_layers,
-                            'nr_run':nr_run,
-                            'sqrt_number_kernels':args.sqrt_number_kernels},
-                            metric_dict={},
-                            run_name=str(nr_run))
+        save_training_hparams(args)
 
         for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
             best_loss = 100000
@@ -199,11 +185,9 @@ def main():
             print("Run nr {}, epoch {} finished training".format(nr_run,epoch), end="\r")
 
         # save the hyperparams using the writer
-        writer.add_hparams({'last epoch':epoch},
-                            {'hparam/best_val_loss':best_loss,
+        save_dict_values({'hparam/best_val_loss':best_loss,
                             'hparam/val_loss':val_loss,
-                            'hparam/val_loss_recon':val_recon_loss},
-                            run_name=str(nr_run))
+                            'hparam/val_loss_recon':val_recon_loss})
 
         # empty the cache of the writer into the directory 
         writer.flush()
