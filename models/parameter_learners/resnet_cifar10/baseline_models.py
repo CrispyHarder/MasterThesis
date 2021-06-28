@@ -310,9 +310,7 @@ class LayerVQVAEresC10(nn.Module):
         if self.int_layers:
             result = self.enc_intermediate_layer(result) + result
         result = self._pre_vq_conv(result)
-        print(result.shape)
         loss, quantized, perplexity, _ = self._vq_vae(result)
-        print(quantized.shape)
         return [loss, quantized, perplexity]
 
     def decode(self, z: torch.Tensor) -> torch.Tensor:
@@ -324,14 +322,12 @@ class LayerVQVAEresC10(nn.Module):
         """
 
         result = self._post_vq_conv(z)
-        print(result.shape)
+
         if self.int_layers:
             result = self.dec_intermediate(result) + result
         result = self.dec_embedding_layer(result)
-        print(result.shape)
         if self.pre_int_layers:
             result = self.post_intermediate_layer(result) + result
-        print(result.shape)
         result = self.final_layer(result)
         return result
 
@@ -349,7 +345,9 @@ class LayerVQVAEresC10(nn.Module):
 
         # mask out the reconstructed values which are not taken into account
         recons = recons * mask
-        recons_loss =F.mse_loss(recons, input, reduction='sum')
+        print(recons.shape)
+        print(input.shape)
+        recons_loss = F.mse_loss(recons, input, reduction='sum')
         recons_loss = recons_loss * (1/torch.sum(mask))
 
         loss = recons_loss + vq_loss
