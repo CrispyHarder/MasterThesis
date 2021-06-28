@@ -138,23 +138,35 @@ def main():
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
+        writer.add_hparams({'batch_size':args.batch_size,
+                            'lr':args.learning_rate,
+                            'model':args.arch,
+                            'in_channels':args.in_channels,
+                            'hidden_dims':args.hidden_dim,
+                            'latent_dim':args.last_dim,
+                            'pre_interm_layers':args.pre_interm_layers,
+                            'interm_layers':args.interm_layers,
+                            'nr_run':nr_run,
+                            'sqrt_number_kernels':args.sqrt_number_kernels},
+                            {'start time':time.time()})
+
         for epoch in range (args.start_epoch, args.start_epoch+args.epochs):
             best_loss = 100000
 
             # perform training for one epoch
-            loss, recon_loss, kl_div = train_epoch(training_loader,model,optimizer, epoch)
+            loss, recon_loss, kl_div = train_epoch(training_loader, model, optimizer, epoch)
 
             # compute on validation split
             val_loss, val_recon_loss, val_kl_div = validation(validation_loader, model)
 
             # log the scalar valuese
-            writer.add_scalar('train/loss',loss,epoch)
-            writer.add_scalar('train/loss_recon',recon_loss,epoch)
-            writer.add_scalar('train/loss_kl_div',kl_div,epoch)
+            writer.add_scalar('train/loss', loss, epoch)
+            writer.add_scalar('train/loss_recon',recon_loss, epoch)
+            writer.add_scalar('train/loss_kl_div', kl_div, epoch)
 
-            writer.add_scalar('val/loss',val_loss,epoch)
-            writer.add_scalar('val/loss_recon',val_recon_loss,epoch)
-            writer.add_scalar('val/loss_kl_div',val_kl_div,epoch)
+            writer.add_scalar('val/loss', val_loss, epoch)
+            writer.add_scalar('val/loss_recon', val_recon_loss, epoch)
+            writer.add_scalar('val/loss_kl_div', val_kl_div, epoch)
 
             if epoch > 0 and epoch % args.save_every == 0:
                 save_checkpoint({
@@ -172,16 +184,7 @@ def main():
             print("Run nr {}, epoch {} finished training".format(nr_run,epoch), end="\r")
 
         # save the hyperparams using the writer
-        writer.add_hparams({'batch_size':args.batch_size,
-                            'lr':args.learning_rate,
-                            'model':args.arch,
-                            'in_channels':args.in_channels,
-                            'hidden_dims':args.hidden_dim,
-                            'latent_dim':args.last_dim,
-                            'pre_interm_layers':args.pre_interm_layers,
-                            'interm_layers':args.interm_layers,
-                            'nr_run':nr_run,
-                            'number_kernels':args.sqrt_number_kernels},
+        writer.add_hparams({'last epoch':epoch},
                             {'best_val_loss':best_loss,
                             'val_loss':val_loss,
                             'va_loss_recon':val_recon_loss})
