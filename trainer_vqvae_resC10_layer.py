@@ -160,7 +160,8 @@ def main():
                             'interm_layers':args.interm_layers,
                             'nr_run':nr_run,
                             'sqrt_number_kernels':args.sqrt_number_kernels},
-                            {'start time':time.time()})
+                            {'hparam/start time':time.time()},
+                            run_name=str(nr_run))
 
         for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
             best_loss = 100000
@@ -180,7 +181,7 @@ def main():
             writer.add_scalar('val/loss', val_loss, epoch)
             writer.add_scalar('val/loss_recon', val_recon_loss, epoch)
             writer.add_scalar('val/loss_vq_loss', val_vq_loss, epoch)
-            writer.add_scalar('train/perplexity', val_perplex, epoch)
+            writer.add_scalar('val/perplexity', val_perplex, epoch)
 
             if epoch > 0 and epoch % args.save_every == 0:
                 save_checkpoint({
@@ -199,9 +200,10 @@ def main():
 
         # save the hyperparams using the writer
         writer.add_hparams({'last epoch':epoch},
-                            {'best_val_loss':best_loss,
-                            'val_loss':val_loss,
-                            'val_loss_recon':val_recon_loss})
+                            {'hparam/best_val_loss':best_loss,
+                            'hparam/val_loss':val_loss,
+                            'hparam/val_loss_recon':val_recon_loss},
+                            run_name=str(nr_run))
 
         # empty the cache of the writer into the directory 
         writer.flush()
