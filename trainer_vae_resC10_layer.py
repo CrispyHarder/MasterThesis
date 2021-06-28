@@ -187,7 +187,7 @@ def main():
         writer.add_hparams({'last epoch':epoch},
                             {'best_val_loss':best_loss,
                             'val_loss':val_loss,
-                            'va_loss_recon':val_recon_loss})
+                            'val_loss_recon':val_recon_loss})
 
         # empty the cache of the writer into the directory 
         writer.flush()

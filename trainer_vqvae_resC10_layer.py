@@ -17,8 +17,8 @@ from util.saving import save_checkpoint
 from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters_dataset
 
 
-default_data_storage = os.path.join('storage','models','ResNet','cifar10')
-default_save_dir = os.path.join('storage','models','VQVAE','resnet_cifar10','layer')
+default_data_storage = os.path.join('storage', 'models', 'ResNet', 'cifar10')
+default_save_dir = os.path.join('storage', 'models', 'VQVAE', 'resnet_cifar10', 'layer')
 
 parser = argparse.ArgumentParser(description='Layerwise VQVAE for Resnets trained on CIFAR10 in pytorch')
 
@@ -58,10 +58,10 @@ parser.add_argument('--arch', default='baseline', type=str,
                     help='The model to be used(dummy argument for now)')
 parser.add_argument('--in_channels', default=64, type=int,
                     help='''The number of channels of the inputs ''') 
-parser.add_argument('--embedding_dim', default=64, type=int,
+parser.add_argument('--embedding_dim', default=32, type=int,
                     help='''The dimension of the embedding(codebook)
                     vectors''')
-parser.add_argument('--num_embeddings', default=512, type=int,
+parser.add_argument('--num_embeddings', default=128, type=int,
                     help='''The number of embedding(codebook) vectors''')    
 parser.add_argument('--hidden_dims', default=[256], type=int,
                     help='''The dimensions of the hidden layers''')  
@@ -155,7 +155,7 @@ def main():
                             'in_channels':args.in_channels,
                             'embedding dim': args.embedding_dim,
                             'num embeddings': args.num_embeddings,
-                            'hidden_dims':args.hidden_dim,
+                            'hidden_dims':args.hidden_dims,
                             'pre_interm_layers':args.pre_interm_layers,
                             'interm_layers':args.interm_layers,
                             'nr_run':nr_run,
