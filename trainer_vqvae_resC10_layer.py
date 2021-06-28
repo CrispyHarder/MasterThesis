@@ -233,7 +233,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
 
         #get outputs
         vq_loss, data_recon, perplexity = model(data)
-        loss_dict = model.loss_function(input, mask, data_recon, vq_loss)
+        loss_dict = model.loss_function(data, mask, data_recon, vq_loss)
         loss = loss_dict['loss']
         recon_loss = loss_dict['Reconstruction_Loss']
 
