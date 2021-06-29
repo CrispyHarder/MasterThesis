@@ -325,6 +325,7 @@ class LayerVQVAEresC10(nn.Module):
                 num_embeddings: int,
                 commitment_cost: float,
                 decay: float,
+                input_size: int,
                 hidden_dims: list = None,
                 pre_interm_layers: int = 1,
                 interm_layers: int = 1,
@@ -334,6 +335,10 @@ class LayerVQVAEresC10(nn.Module):
 
         self.pre_int_layers = pre_interm_layers > 0
         self.int_layers = interm_layers > 0
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.input_size = input_size
+        self.input_size_small = (input_size/3)**2
 
         if hidden_dims is None:
             hidden_dims = [256]
@@ -446,8 +451,9 @@ class LayerVQVAEresC10(nn.Module):
         return {'loss': loss, 'Reconstruction_Loss':recons_loss, 'vq_loss':vq_loss}
 
     def sample(self,
-               num_samples:int,
-               current_device: int, **kwargs) -> torch.Tensor:
+                number: int, 
+                current_device: int, 
+                **kwargs) -> torch.Tensor:
         """
         Samples from the latent space and return the corresponding
         image space map.
@@ -455,12 +461,14 @@ class LayerVQVAEresC10(nn.Module):
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        z = torch.randn(num_samples,
-                        self.latent_dim)
+        sampled_indices = torch.randint(0,self.num_embeddings,(number,self.input_size_small**2))
+        codebook_vecs = self._vq_vae._embedding(sampled_indices)
+        codebook_vecs = codebook_vecs.view(-1,self.embedding_dim,
+            self.input_size_small,self.input_size_small)
 
-        z = z.to(current_device)
+        codebook_vecs = codebook_vecs.to(current_device)
 
-        samples = self.decode(z)
+        samples = self.decode(codebook_vecs)
         return samples
 
     def generate(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
@@ -496,8 +504,6 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         if hidden_dims is None:
             hidden_dims = [256]
 
-        self.input_size = input_size
-        self.input_size_small = (input_size/3)**2
         #layer to get conditional in encoding 
         self.first_layer = nn.Conv2d(in_channels+2,in_channels,kernel_size=1,padding=0)
         self.embed_layer_big = nn.Linear(number_layers, input_size**2)
@@ -550,7 +556,7 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         return  vq_loss, recon, perplexity
 
     def sample(self,
-               num_samples:int,
+               number: int,
                current_device: int, 
                arch: int,
                layer: int,
@@ -569,11 +575,18 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         embedded_layer = self.embed_layer_small(layer)
         embedded_layer = embedded_layer.view(-1,self.input_size_small,self.input_size_small)
 
-        z = torch.randn(num_samples,
-                        self.latent_dim)
+        sampled_indices = torch.randint(0,self.num_embeddings,(number,self.input_size_small**2))
+        codebook_vecs = self._vq_vae._embedding(sampled_indices)
+        codebook_vecs = codebook_vecs.view(-1,self.embedding_dim,
+            self.input_size_small,self.input_size_small)
+        codebook_vecs = codebook_vecs.to(current_device)
 
-        z = torch.cat([z, embedded_arch, embedded_layer])
+        z = torch.cat([codebook_vecs, embedded_arch, embedded_layer])
+        samples = self.decode(z)
+        return samples
+
         
+
         z = z.to(current_device)
 
         samples = self.decode(z)
