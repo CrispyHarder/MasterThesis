@@ -145,3 +145,8 @@ def append_label_to_vec(b_vec,labels,number_labels):
 
 def side_to_stack(sided_tensors):
     pass
+
+def one_hot(clas, number_classes):
+    vec = torch.zeros(number_classes)
+    vec[clas]=1
+    return vec

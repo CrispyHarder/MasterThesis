@@ -2,9 +2,11 @@
 # try to reconstruct it using a vae and vq-vae 
 # We ignore the layer depth and thus pad to max size
 
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules import normalization
 from models.VQ_VAE.basic_gc.vq_vae import VectorQuantizer, VectorQuantizerEMA
 from .types_ import *
 
@@ -222,6 +224,137 @@ class LayerVAEresC10(nn.Module):
 
         return self.forward(x)[0]
 
+class LayerCVAEresC10(LayerVAEresC10):
+
+    def __init__(self, in_channels: int, 
+                latent_dim: int, 
+                hidden_dims: list, 
+                pre_interm_layers: int, 
+                interm_layers: int, 
+                sqrt_number_kernels: int, 
+                number_layers: int,
+                number_archs: int, 
+                input_size: int = 24,
+                **kwargs) -> None:
+
+        super().__init__(in_channels, latent_dim, hidden_dims=hidden_dims, 
+        pre_interm_layers=pre_interm_layers, interm_layers=interm_layers, 
+        sqrt_number_kernels=sqrt_number_kernels, **kwargs)
+        
+        self.input_size = input_size
+        self.embed_layer = nn.Linear(number_layers, input_size**2)
+        self.embed_arch = nn.Linear(number_archs, input_size**2)
+        #a layer to scale down the number of slices to use structure
+        self.first_layer = nn.Conv2d(in_channels + 2,in_channels,
+            kernel_size=3,padding=1)
+        
+        self.fc_dec = nn.Sequential(
+                            nn.Linear(latent_dim + number_layers + number_archs, 
+                            hidden_dims[1]), nn.LeakyReLU()) 
+        
+    def encode(self, input):
+        """
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """
+        result = self.first_layer(input)
+        if self.pre_int_layers:
+            result = self.pre_intermediate_layer(result) + result
+        result = self.embedding_layer(result)
+        if self.int_layers:
+            result = self.enc_intermediate_layer(result) + result
+        result = self.combination_layer(result)
+        result = torch.squeeze(result)
+        result = self.fc_enc(result)
+
+        # Split the result into mu and var components
+        # of the latent Gaussian distribution
+        mu = self.fc_mu(result)
+        log_var = self.fc_var(result)
+        return [mu, log_var]
+
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        """
+        Maps the given latent codes
+        onto the image space.
+        :param z: (Tensor) [B x D]
+        :return: (Tensor) [B x C x H x W]
+        """
+        result = self.fc_dec(z)
+        result = torch.unsqueeze(result, dim=2)
+        result = torch.unsqueeze(result, dim=2)
+        result = self.decombination_layer(result)
+        if self.int_layers:
+            result = self.dec_intermediate(result) + result
+        result = self.dec_embedding_layer(result)
+        if self.pre_int_layers:
+            result = self.post_intermediate_layer(result) + result
+        result = self.final_layer(result)
+        return result
+
+    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
+        """
+        Reparameterization trick to sample from N(mu, var) from
+        N(0,1).
+        :param mu: (Tensor) Mean of the latent Gaussian [B x D]
+        :param logvar: (Tensor) Standard deviation of the latent Gaussian [B x D]
+        :return: (Tensor) [B x D]
+        """
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return eps * std + mu
+
+    def forward(self, input, layer, arch):
+
+        layer = layer.float()
+        embedded_layer = self.embed_layer(layer)
+        embedded_layer = embedded_layer.view(-1, self.input_size, self.input_size).unsqueeze(1)
+
+        arch = arch.float()
+        embedded_arch = self.embed_arch(arch)
+        embedded_arch = embedded_arch.view(-1, self.input_size, self.input_size).unsqueeze(1)
+
+        x = torch.cat([input, embedded_arch, embedded_layer], dim = 1)
+
+        mu, log_var = self.encode(input)
+
+        z = self.reparameterize(mu, log_var)
+        z = torch.cat([z, arch, layer], dim = 1)
+
+        return  [self.decode(z), input, mu, log_var]
+
+    def sample(self,
+               num_samples: int,
+               current_device: int, 
+               layer: int,
+               arch: int) -> torch.Tensor:
+        """
+        Samples from the latent space and return the corresponding
+        image space map.
+        :param num_samples: (Int) Number of samples
+        :param current_device: (Int) Device to run the model
+        :return: (Tensor)
+        """
+        layer = layer.float()
+        arch = arch.float()
+        z = torch.randn(num_samples,
+                        self.latent_dim)
+
+        z = z.to(current_device)
+        z = torch.cat([z, y], dim=1)
+        samples = self.decode(z)
+        return samples
+
+    def generate(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
+        """
+        Given an input image x, returns the reconstructed image
+        :param x: (Tensor) [B x C x H x W]
+        :return: (Tensor) [B x C x H x W]
+        """
+
+        return self.forward(x)[0]
 
 class LayerVQVAEresC10(nn.Module):
 

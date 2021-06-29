@@ -1,10 +1,11 @@
 from abc import abstractmethod
 import os 
 import torch
+import torch.nn.functional as F
 from torch.utils.data import Dataset
 from util.saving import get_state_dict_from_checkpoint # pylint: disable=import-error
 from util.data_reshaping import stack_to_side, pad_layer, append_label_to_stacked # pylint: disable=import-error
-
+from util.data_reshaping import one_hot
 class Resnet_cifar10_dataset(Dataset):
     '''a parent class for any dataset containing parameters of resnet20,resnet32,resnet44 in order
     to feed into a data loader'''
@@ -28,7 +29,7 @@ class Resnet_cifar10_dataset(Dataset):
             train(bool): whether or train or validation data should be used'''
         super().__init__()
         self.use_labels = use_labels
-        self.number_labels = 3
+        self.number_archs = 3
         self.path_to_data = path_to_data
         self.archs = ['resnet20','resnet32','resnet44']
         #check whether data from other model architectures is present
@@ -74,7 +75,8 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
         # get a list to the files with with the model states containing the params
         # for every of the 3 model archs a list
         self.length = 0
-        
+        self.number_layers = 0
+
         self.paths_to_params_by_arch = [[], [], []]
         for i,arch in enumerate(os.listdir(self.path_to_data)):
             path_to_arch = os.path.join(self.path_to_data, arch,self.mode)
@@ -87,6 +89,7 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
                         if 'conv' in param_tensor:
                             self.paths_to_params_by_arch[i].append((path_to_params, layer_number))
                             self.length += 1
+                            self.number_layers = max(self.number_layers, layer_number)
                             layer_number += 1 
         
         self.length_r20 = len(self.paths_to_params_by_arch[0])
@@ -119,13 +122,12 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
 
                     params = pad_layer(params, 64, 64)
                     mask = pad_layer(mask, 64, 64)
-                    if self.use_labels:
-                        params = append_label_to_stacked(params, arch, self.number_labels)
-                        # also mask
 
                     params = stack_to_side(params)
                     mask = stack_to_side(mask)
-                    return params, mask, arch
+                    arch = one_hot(arch,self.number_archs)
+                    layer = one_hot(nr_layer,self.number_layers)
+                    return params, mask, arch, layer 
                 else: 
                     nr_layer += 1
 
@@ -200,14 +202,11 @@ class Resnet_cifar10_parameters_dataset(Resnet_cifar10_dataset):
 
                 params = pad_layer(params, 64, 64)
                 mask = pad_layer(mask, 64, 64)
-                if self.use_labels:
-                    params = append_label_to_stacked(params, arch,self.number_labels)
-                    # also mask
 
                 params = stack_to_side(params)
                 mask = stack_to_side(mask)
 
                 parameters.append(params)
                 masks.append(mask)
-        
+        arch = one_hot(arch, self.number_archs)
         return torch.stack(parameters), torch.stack(masks), arch # pylint: disable=not-callable
