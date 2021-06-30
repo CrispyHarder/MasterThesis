@@ -3,6 +3,7 @@
 # We ignore the layer depth and thus pad to max size
 
 import math
+from numpy.core.fromnumeric import shape
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -287,7 +288,7 @@ class LayerCVAEresC10(LayerVAEresC10):
 
         x = torch.cat([input, embedded_arch, embedded_layer], dim = 1)
 
-        mu, log_var = self.encode(input)
+        mu, log_var = self.encode(x)
 
         z = self.reparameterize(mu, log_var)
         z = torch.cat([z, arch, layer], dim = 1)
@@ -298,7 +299,8 @@ class LayerCVAEresC10(LayerVAEresC10):
                num_samples: int,
                current_device: int, 
                layer: int,
-               arch: int) -> torch.Tensor:
+               arch: int,
+               **kwargs) -> torch.Tensor:
         """
         Samples from the latent space and return the corresponding
         image space map.
@@ -313,6 +315,7 @@ class LayerCVAEresC10(LayerVAEresC10):
                         self.latent_dim)
 
         z = z.to(current_device)
+        print(z.shape, arch.shape,layer.shape)
         z = torch.cat([z, layer, arch], dim=1)
         samples = self.decode(z)
         return samples
@@ -325,11 +328,11 @@ class LayerVQVAEresC10(nn.Module):
                 num_embeddings: int,
                 commitment_cost: float,
                 decay: float,
-                input_size: int,
                 hidden_dims: list = None,
                 pre_interm_layers: int = 1,
                 interm_layers: int = 1,
                 sqrt_number_kernels: int = 8,
+                input_size:int = 24,
                 **kwargs) -> None:
         super().__init__()
 
@@ -338,7 +341,7 @@ class LayerVQVAEresC10(nn.Module):
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
         self.input_size = input_size
-        self.input_size_small = (input_size/3)**2
+        self.input_size_small = int((input_size/3))
 
         if hidden_dims is None:
             hidden_dims = [256]
@@ -430,7 +433,7 @@ class LayerVQVAEresC10(nn.Module):
         result = self.final_layer(result)
         return result
 
-    def forward(self, input):
+    def forward(self, input, **kwargs):
         vq_loss, quantized, perplexity = self.encode(input)
         recon = self.decode(quantized)
         return  vq_loss, recon, perplexity
@@ -462,6 +465,7 @@ class LayerVQVAEresC10(nn.Module):
         :return: (Tensor)
         """
         sampled_indices = torch.randint(0,self.num_embeddings,(number,self.input_size_small**2))
+        print(sampled_indices.shape)
         codebook_vecs = self._vq_vae._embedding(sampled_indices)
         codebook_vecs = codebook_vecs.view(-1,self.embedding_dim,
             self.input_size_small,self.input_size_small)
@@ -494,7 +498,7 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
                 sqrt_number_kernels: int, 
                 number_archs: int,
                 number_layers:int, 
-                input_size:int ,
+                input_size:int = 24 ,
                 **kwargs) -> None:
 
         super().__init__(in_channels, embedding_dim, num_embeddings, 
@@ -510,8 +514,8 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         self.embed_arch_big = nn.Linear(number_archs, input_size**2)
 
         #layers to get conditional in decoding 
-        self.embed_layer_small = nn.Linear(number_layers,  self.input_size_small)
-        self.embed_arch_small = nn.Linear(number_archs,  self.input_size_small)
+        self.embed_layer_small = nn.Linear(number_layers,  self.input_size_small**2)
+        self.embed_arch_small = nn.Linear(number_archs,  self.input_size_small**2)
         self._post_vq_conv = nn.Conv2d(embedding_dim+2,hidden_dims[0],kernel_size=1,padding=0)
     
     def encode(self, input):
@@ -535,21 +539,23 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         # embedd labels and append them to input 
         arch = arch.float()
         embedded_arch = self.embed_arch_big(arch)
-        embedded_arch = embedded_arch.view(-1,self.input_size,self.input_size)
-
+        embedded_arch = embedded_arch.view(-1,self.input_size,self.input_size).unsqueeze(1)
+        
         layer = layer.float()
         embedded_layer = self.embed_layer_big(layer)
-        embedded_layer = embedded_layer.view(-1,self.input_size,self.input_size)
-
+        embedded_layer = embedded_layer.view(-1,self.input_size,self.input_size).unsqueeze(1)
+        
         #get encoding 
         x = torch.cat([input, embedded_arch, embedded_layer],dim=1)
         vq_loss, quantized, perplexity = self.encode(x)
 
         #embed layers in small format to concatenate to codebook vectors
         embedded_arch = self.embed_arch_small(arch)
-        embedded_arch = embedded_arch.view(-1,self.input_size_small,self.input_size_small)
+        embedded_arch = embedded_arch.view(-1,self.input_size_small,
+                                self.input_size_small).unsqueeze(1)
         embedded_layer = self.embed_layer_small(layer)
-        embedded_layer = embedded_layer.view(-1,self.input_size_small,self.input_size_small)
+        embedded_layer = embedded_layer.view(-1,self.input_size_small,
+                                self.input_size_small).unsqueeze(1)
 
         z = torch.cat([quantized, embedded_arch, embedded_layer], dim = 1)
         recon = self.decode(z)
@@ -571,9 +577,11 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         arch = arch.float()
         layer = layer.float()
         embedded_arch = self.embed_arch_small(arch)
-        embedded_arch = embedded_arch.view(-1,self.input_size_small,self.input_size_small)
+        embedded_arch = embedded_arch.view(-1,self.input_size_small,
+            self.input_size_small).unsqueeze(1)
         embedded_layer = self.embed_layer_small(layer)
-        embedded_layer = embedded_layer.view(-1,self.input_size_small,self.input_size_small)
+        embedded_layer = embedded_layer.view(-1,self.input_size_small,
+            self.input_size_small).unsqueeze(1)
 
         sampled_indices = torch.randint(0,self.num_embeddings,(number,self.input_size_small**2))
         codebook_vecs = self._vq_vae._embedding(sampled_indices)
@@ -581,13 +589,6 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
             self.input_size_small,self.input_size_small)
         codebook_vecs = codebook_vecs.to(current_device)
 
-        z = torch.cat([codebook_vecs, embedded_arch, embedded_layer])
-        samples = self.decode(z)
-        return samples
-
-        
-
-        z = z.to(current_device)
-
+        z = torch.cat([codebook_vecs, embedded_arch, embedded_layer],dim=1)
         samples = self.decode(z)
         return samples

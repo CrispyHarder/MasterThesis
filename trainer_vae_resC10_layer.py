@@ -11,9 +11,9 @@ import torch.optim as optim
 
 from torch.utils.tensorboard import SummaryWriter
 
-from models.parameter_learners.resnet_cifar10.baseline_models import LayerVAEresC10
+from models.parameter_learners.resnet_cifar10.baseline_models import LayerVAEresC10, LayerCVAEresC10
 from util.average_meter import AverageMeter
-from util.saving import save_checkpoint
+from util.saving import save_checkpoint, save_training_hparams, save_dict_values
 from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters_dataset
 
 
@@ -23,7 +23,7 @@ default_save_dir = os.path.join('storage','models','VAE','resnet_cifar10','layer
 parser = argparse.ArgumentParser(description='Layerwise VAE for Resnets trained on CIFAR10 in pytorch')
 
 # the device to be used
-parser.add_argument('-device',default="0")
+parser.add_argument('-device', default="0")
 
 # training specifics 
 parser.add_argument('--runs',type=int,default=1, help = 'number of runs')
@@ -51,6 +51,8 @@ parser.add_argument('--weight_kld', default=1.0 , type=float,
 # Model architecture
 parser.add_argument('--arch', default='baseline', type=str,
                     help='The model to be used(dummy argument for now)')
+parser.add_argument('--conditional', default=False, action='store_true',
+                    help='whether the model should be conditional')
 parser.add_argument('--in_channels', default=64, type=int,
                     help='''The number of channels of the inputs ''') 
 parser.add_argument('--hidden_dims', default=[128,256,512], type=list,
@@ -96,9 +98,13 @@ def main():
     runs_start_at = args.runs_start_at
 
     # load train data 
-    training_data = Resnet_cifar10_layer_parameters_dataset(path_to_data=args.data_storage,train=True)
+    training_data = Resnet_cifar10_layer_parameters_dataset(path_to_data=args.data_storage, train=True)
 
-    validation_data = Resnet_cifar10_layer_parameters_dataset(path_to_data=args.data_storage,train=False)
+    #for conditional version
+    number_archs = training_data.number_archs
+    number_layers = training_data.number_layers
+
+    validation_data = Resnet_cifar10_layer_parameters_dataset(path_to_data=args.data_storage, train=False)
 
     # put train data into DataLoader
     training_loader = DataLoader(training_data, 
@@ -120,11 +126,14 @@ def main():
     # val_data_variance = np.var(validation_data.data / 255.0)
 
     #run nr_runs often and save the models in the specified place
-    for nr_run in range(runs_start_at,runs_start_at + nr_runs):
+    for nr_run in range(runs_start_at, runs_start_at + nr_runs):
 
         # Check if the save_dir for the run exists or not,
         # path is save_dir/model_name(like resnet20)/run_ix
-        save_dir_run = os.path.join(args.save_dir,args.arch,'run_{}'.format(nr_run))
+        if args.conditional:
+            save_dir_run = os.path.join(args.save_dir, args.arch+'_conditional', 'run_{}'.format(nr_run))
+        else:
+            save_dir_run = os.path.join(args.save_dir, args.arch, 'run_{}'.format(nr_run))
         if not os.path.exists(save_dir_run):
             os.makedirs(save_dir_run)
 
@@ -132,23 +141,17 @@ def main():
         writer = SummaryWriter(save_dir_run)
 
         # construct model and send it to GPU
-        model = LayerVAEresC10(args.in_channels, args.latent_dim, args.hidden_dims, args.pre_interm_layers,
+        if args.conditional:
+            model = LayerCVAEresC10(args.in_channels, args.latent_dim, args.hidden_dims, args.pre_interm_layers,
+              args.interm_layers, args.sqrt_number_kernels, number_layers, number_archs).cuda()
+        else:
+            model = LayerVAEresC10(args.in_channels, args.latent_dim, args.hidden_dims, args.pre_interm_layers,
               args.interm_layers, args.sqrt_number_kernels).cuda()
 
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
-        writer.add_hparams({'batch_size':args.batch_size,
-                            'lr':args.learning_rate,
-                            'model':args.arch,
-                            'in_channels':args.in_channels,
-                            'hidden_dims':args.hidden_dim,
-                            'latent_dim':args.last_dim,
-                            'pre_interm_layers':args.pre_interm_layers,
-                            'interm_layers':args.interm_layers,
-                            'nr_run':nr_run,
-                            'sqrt_number_kernels':args.sqrt_number_kernels},
-                            {'start time':time.time()})
+        save_training_hparams(args, save_dir_run)
 
         for epoch in range (args.start_epoch, args.start_epoch+args.epochs):
             best_loss = 100000
@@ -184,10 +187,10 @@ def main():
             print("Run nr {}, epoch {} finished training".format(nr_run,epoch), end="\r")
 
         # save the hyperparams using the writer
-        writer.add_hparams({'last epoch':epoch},
-                            {'best_val_loss':best_loss,
+        save_dict_values({'best_val_loss':best_loss,
                             'val_loss':val_loss,
-                            'val_loss_recon':val_recon_loss})
+                            'val_loss_recon':val_recon_loss},
+                            save_dir_run)
 
         # empty the cache of the writer into the directory 
         writer.flush()
@@ -197,6 +200,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
     """
         Run one train epoch
     """
+    global args
     # global train_data_variance
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -208,16 +212,16 @@ def train_epoch(train_loader, model, optimizer, epoch):
     model.train()
 
     end = time.time()
-    for i, (data, mask, arch) in enumerate(train_loader):
+    for i, (data, mask, arch, layer) in enumerate(train_loader):
 
         # measure data loading time
         data_time.update(time.time() - end)
 
         data = data.cuda()
         optimizer.zero_grad()
-
-        data_recon, input, mu, log_var = model(data)
-        loss_dict = model.loss_function(mask,data_recon, input, mu, log_var,M_N=args.weight_kld)
+        
+        data_recon, input, mu, log_var = model(data, arch=arch, layer=layer)
+        loss_dict = model.loss_function(mask, data_recon, input, mu, log_var, M_N=args.weight_kld)
         loss = loss_dict['loss']
         recon_loss = loss_dict['Reconstruction_Loss']
         kl_div = loss_dict['KLD']
@@ -265,13 +269,13 @@ def validation(val_loader,model):
 
     end = time.time()
     with torch.no_grad():
-        for i, (data, mask, arch) in enumerate(val_loader):
+        for i, (data, mask, arch, layer) in enumerate(val_loader):
 
             data = data.cuda()
 
             # compute output
-            data_recon, input, mu, log_var = model(data)
-            loss_dict = model.loss_function(mask,data_recon, input, mu, log_var,M_N=args.weight_kld)
+            data_recon, input, mu, log_var = model(data, arch=arch, layer=layer)
+            loss_dict = model.loss_function(mask, data_recon, input, mu, log_var, M_N=args.weight_kld)
             loss = loss_dict['loss']
             recon_loss = loss_dict['Reconstruction_Loss']
             kl_div = loss_dict['KLD']

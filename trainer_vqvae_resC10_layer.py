@@ -11,7 +11,7 @@ import torch.optim as optim
 
 from torch.utils.tensorboard import SummaryWriter
 
-from models.parameter_learners.resnet_cifar10.baseline_models import LayerVQVAEresC10
+from models.parameter_learners.resnet_cifar10.baseline_models import LayerVQVAEresC10, LayerCVQVAEresC10
 from util.average_meter import AverageMeter
 from util.saving import save_checkpoint,save_training_hparams,save_dict_values
 from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters_dataset
@@ -56,6 +56,8 @@ parser.add_argument('--decay', default=0.99, type=float,
 # Model architecture
 parser.add_argument('--arch', default='baseline', type=str,
                     help='The model to be used(dummy argument for now)')
+parser.add_argument('--conditional', default=False, action='store_true',
+                    help='whether the model should be conditional')
 parser.add_argument('--in_channels', default=64, type=int,
                     help='''The number of channels of the inputs ''') 
 parser.add_argument('--embedding_dim', default=32, type=int,
@@ -114,6 +116,9 @@ def main():
                                 shuffle=True,
                                 num_workers=args.num_workers,
                                 pin_memory=False)
+    #for conditional variant 
+    number_archs = training_data.number_archs
+    number_layers = training_data.number_layers
 
     validation_loader = DataLoader(validation_data,
                                 batch_size=32,
@@ -132,7 +137,10 @@ def main():
 
         # Check if the save_dir for the run exists or not,
         # path is save_dir/model_name(like resnet20)/run_ix
-        save_dir_run = os.path.join(args.save_dir,args.arch,'run_{}'.format(nr_run))
+        if args.conditional:
+            save_dir_run = os.path.join(args.save_dir, args.arch+'_conditional', 'run_{}'.format(nr_run))
+        else:
+            save_dir_run = os.path.join(args.save_dir, args.arch, 'run_{}'.format(nr_run))
         if not os.path.exists(save_dir_run):
             os.makedirs(save_dir_run)
 
@@ -140,14 +148,18 @@ def main():
         writer = SummaryWriter(save_dir_run)
 
         # construct model and send it to GPU
-        model = LayerVQVAEresC10(args.in_channels, args.embedding_dim, args.num_embeddings, 
+        if args.conditional:
+            model = LayerCVQVAEresC10(args.in_channels, args.embedding_dim, args.num_embeddings, 
                 args.commitment_cost, args.decay, args.hidden_dims, args.pre_interm_layers,
-                args.interm_layers, args.sqrt_number_kernels).cuda()
-
+                args.interm_layers, args.sqrt_number_kernels, number_archs, number_layers)
+        else:
+            model = LayerVQVAEresC10(args.in_channels, args.embedding_dim, args.num_embeddings, 
+                args.commitment_cost, args.decay, args.hidden_dims, args.pre_interm_layers,
+                args.interm_layers, args.sqrt_number_kernels)
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
-        save_training_hparams(args,save_dir_run)
+        save_training_hparams(args, save_dir_run)
 
         for epoch in range(args.start_epoch, args.start_epoch+args.epochs):
             best_loss = 100000
@@ -173,16 +185,16 @@ def main():
                 save_checkpoint({
                     'epoch': epoch + 1,
                     'state_dict': model.state_dict()
-                }, is_checkpoint = True, filename=os.path.join(save_dir_run, 'checkpoint_{}.th'.format(epoch+1)))
+                }, is_checkpoint=True, filename=os.path.join(save_dir_run, 'checkpoint_{}.th'.format(epoch+1)))
 
             if val_loss < best_loss:
                 best_loss = val_loss
                 save_checkpoint({
                     'epoch': epoch + 1,
                     'state_dict': model.state_dict()
-                }, is_checkpoint = False, is_best = True, filename=os.path.join(save_dir_run, 'model.th'))
+                }, is_checkpoint=False, is_best=True, filename=os.path.join(save_dir_run, 'model.th'))
 
-            print("Run nr {}, epoch {} finished training".format(nr_run,epoch), end="\r")
+            print("Run nr {}, epoch {} finished training".format(nr_run, epoch), end="\r")
 
         # save the hyperparams using the writer
         save_dict_values({'hparam/best_val_loss':best_loss,
@@ -210,7 +222,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
     model.train()
 
     end = time.time()
-    for i, (data, mask, arch) in enumerate(train_loader):
+    for i, (data, mask, arch, layer) in enumerate(train_loader):
 
         # measure data loading time
         data_time.update(time.time() - end)
@@ -219,7 +231,7 @@ def train_epoch(train_loader, model, optimizer, epoch):
         optimizer.zero_grad()
 
         #get outputs
-        vq_loss, data_recon, perplexity = model(data)
+        vq_loss, data_recon, perplexity = model(data,arch=arch, layer=layer)
         loss_dict = model.loss_function(data, mask, data_recon, vq_loss)
         loss = loss_dict['loss']
         recon_loss = loss_dict['Reconstruction_Loss']
@@ -272,12 +284,12 @@ def validation(val_loader, model):
 
     end = time.time()
     with torch.no_grad():
-        for i, (data, mask, arch) in enumerate(val_loader):
+        for i, (data, mask, arch, layer) in enumerate(val_loader):
 
             data = data.cuda()
 
             # compute output
-            vq_loss, data_recon, perplexity = model(data)
+            vq_loss, data_recon, perplexity = model(data, arch=arch, layer=layer)
             loss_dict = model.loss_function(data, mask, data_recon, vq_loss)
             loss = loss_dict['loss']
             recon_loss = loss_dict['Reconstruction_Loss']
