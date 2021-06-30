@@ -16,7 +16,11 @@ from util.average_meter import AverageMeter
 from util.learning_rates import MultistepMultiGammaLR
 from util.learning_rates import get_lr
 from models.ResNet import resnet_cifar10
-
+from models.parameter_learners.resnet_cifar10.baseline_models import (
+    LayerCVAEresC10, 
+    LayerCVQVAEresC10, 
+    LayerVAEresC10, 
+    LayerVQVAEresC10 )
 model_names = sorted(name for name in resnet_cifar10.__dict__
     if name.islower() and not name.startswith("__")
                      and name.startswith("resnet")
