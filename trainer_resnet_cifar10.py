@@ -11,7 +11,7 @@ import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.tensorboard import SummaryWriter
-from util.saving import save_checkpoint
+from util.saving import save_checkpoint, save_training_hparams, save_dict_values
 from util.average_meter import AverageMeter
 from util.learning_rates import MultistepMultiGammaLR
 from util.learning_rates import get_lr
@@ -28,12 +28,13 @@ default_data_storage = os.path.join('storage','data')
 default_save_dir = os.path.join('storage','models','ResNet','cifar10')
 
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
-parser.add_argument('--data_storage', default=default_data_storage)
+
+#the device to be used 
 parser.add_argument('-device',default="0")
-parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet32',
-                    choices=model_names,
-                    help='model architecture: ' + ' | '.join(model_names) +
-                    ' (default: resnet32)')
+
+#training specifics
+parser.add_argument('--initialisation', default='standart',
+                    help='how to initialize the model')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=120, type=int, metavar='N',
@@ -42,35 +43,42 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=128, type=int,
                     metavar='N', help='mini-batch size (default: 128)')
-parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
-                    metavar='LR', help='initial learning rate')
-parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
-                    help='momentum')
-parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
-                    metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument('--print-freq', '-p', default=50, type=int,
-                    metavar='N', help='print frequency (default: 50)')
-parser.add_argument('--resume', default='', type=str, metavar='PATH',
-                    help='path to latest checkpoint (default: none)')
-parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
-                    help='evaluate model on validation set')
-parser.add_argument('--pretrained', dest='pretrained', action='store_true',
-                    help='use pre-trained model')
-parser.add_argument('--half', dest='half', action='store_true',
-                    help='use half-precision(16-bit) ')
-parser.add_argument('--save-dir', dest='save_dir',
-                    help='The directory used to save the trained models',
-                    default=default_save_dir, type=str)
-parser.add_argument('--save-every', dest='save_every',
-                    help='Saves checkpoints at every specified number of epochs',
-                    type=int, default=10)
 parser.add_argument('--nr_runs', type=int, default=100)
 parser.add_argument('--runs_start_at',type=int,default=0)
 parser.add_argument('--improvement_margin', type=float, default=0.5)
 parser.add_argument('--breaking_condition', type=int, default=15, 
                     help='''After how many epochs without aggregated improvement 
                     of at least improvement_margin the training shall be stopped''')
+parser.add_argument('--resume', default='', type=str, metavar='PATH',
+                    help='path to latest checkpoint (default: none)')
 
+
+# optimizer configuration/ loss function specifics
+parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
+                    metavar='LR', help='initial learning rate')
+parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
+                    help='momentum')
+parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
+                    metavar='W', help='weight decay (default: 1e-4)')
+
+# Model architecture
+parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet32',
+                    choices=model_names,
+                    help='model architecture: ' + ' | '.join(model_names) +
+                    ' (default: resnet32)')
+
+# saving data,model states and results 
+parser.add_argument('--save-dir', dest='save_dir',
+                    help='The directory used to save the trained models',
+                    default=default_save_dir, type=str)
+parser.add_argument('--save-every', dest='save_every',
+                    help='Saves checkpoints at every specified number of epochs',
+                    type=int, default=10)
+parser.add_argument('--data_storage', default=default_data_storage)
+
+# prints/outputs in console
+parser.add_argument('--print-freq', '-p', default=50, type=int,
+                    metavar='N', help='print frequency (default: 50)')
 
 
 def main():
@@ -97,9 +105,15 @@ def main():
         #add a writer to log training results for tensorboard
         writer = SummaryWriter(save_dir_run)
 
-        # set the model, load and send to device
+        # set the model, load and send to device and save its initialisation
         model = resnet_cifar10.__dict__[args.arch]()
+        if not args.initialisation == 'standart':
+            pass
         model.cuda()
+        save_checkpoint({
+            'epoch':0,
+            'state_dict': model.state_dict()
+        }, is_checkpoint=True,filename='initialisation.pth.tar')
 
         # optionally resume from a checkpoint
         if args.resume:
@@ -148,14 +162,11 @@ def main():
         # define loss function (criterion) and optimizer and lr_scheduler
         criterion = nn.CrossEntropyLoss().cuda()
 
-        if args.half:
-            model.half()
-            criterion.half()
-
         optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                     momentum=args.momentum,
                                     weight_decay=args.weight_decay)
 
+        save_training_hparams(args, save_dir_run)
         #use own lr_scheduler
         # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
         #                        milestones=[100, 150], last_epoch=args.start_epoch - 1)
@@ -167,11 +178,6 @@ def main():
             # then switch back. In this setup it will correspond for first epoch.
             for param_group in optimizer.param_groups:
                 param_group['lr'] = args.lr*0.1
-
-
-        if args.evaluate:
-            _ , _ = validate(val_loader, model, criterion)
-            return
 
         #preperation in order to get the number of epochs without improvement
         epochs_wo_improvement = 0
@@ -223,6 +229,7 @@ def main():
                 'best_prec1': best_prec1,
             }, is_best, is_checkpoint = False, filename=os.path.join(save_dir_run, 'model.th'))
 
+        save_dict_values({'best prec1':best_prec1},save_dir_run)
         # empty the cache of the writer
         writer.flush()
 
@@ -248,8 +255,6 @@ def train(train_loader, model, criterion, optimizer, epoch):
         target = target.cuda()
         input_var = input.cuda()
         target_var = target
-        if args.half:
-            input_var = input_var.half()
 
         # compute output
         output = model(input_var)
@@ -300,9 +305,6 @@ def validate(val_loader, model, criterion):
             target = target.cuda()
             input_var = input.cuda()
             target_var = target.cuda()
-
-            if args.half:
-                input_var = input_var.half()
 
             # compute output
             output = model(input_var)

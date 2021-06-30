@@ -69,7 +69,6 @@ parser.add_argument('--sqrt_number_kernels', default=8, type=int,
                     help='''a parameter for the network depending on the number
                     of filters per layer''')          
 
-
 # saving data,model states and results 
 parser.add_argument('--data_storage', default=default_data_storage,
                     help='where the train/val/test data is saved')
