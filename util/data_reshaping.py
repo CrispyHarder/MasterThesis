@@ -55,11 +55,29 @@ def stack_to_side(stacked_tensors):
         first_dim = 8
         second_dim = 8 
     new_tensor = torch.zeros(depth, k_size*first_dim, k_size*second_dim, device=device)
-    if torch.cuda.is_available():
-        new_tensor = new_tensor.cuda()
     for i in range(first_dim):
         for j in range(second_dim):
             new_tensor[:,i*k_size:(i+1)*k_size, j*k_size:(j+1)*k_size] = stacked_tensors[i*second_dim+j] 
+    return new_tensor
+
+
+def side_to_stack(sided_tensors, k_size):
+    '''Takes a tensor of sided 3d-tensors(e.g. 64,24,24 in my case) (see stack to sided) 
+    and transforms them into a stack of tensors which is then 4d'''
+    device = sided_tensors.device
+    shape = sided_tensors.shape
+    depth = shape[0]
+    width = shape[1]
+    height = shape[2]
+    n_width = int(width/k_size)
+    n_height = int(height/k_size)
+    number_kernels = n_width*n_height
+    
+    new_tensor = torch.zeros(number_kernels,depth, k_size, k_size, device=device)
+    #go through the grid of sided tensors and copy them into the new tensor
+    for i in range(n_width):
+        for j in range(n_height):
+            new_tensor[i*n_height+j,:,:,:] = sided_tensors[:,i*k_size:(i+1)*k_size, j*k_size:(j+1)*k_size]
     return new_tensor
 
 def pad_layer(params, depth=64, number=64):
@@ -78,6 +96,9 @@ def pad_layer(params, depth=64, number=64):
     return params
 
 def append_label_to_stacked(tensor, label, number_labels):
+    '''can be used to append labels to a stack of tensors. Since they are 
+    not one-dim one can not simply append a one hot vector. Instead a one-hot matrix is 
+    appended, which has a number of layers depending on the number of maximum labels'''
     device = tensor.device
     shape = tensor.shape
     k_size = shape[-1]
@@ -139,12 +160,8 @@ def append_label_to_vec(b_vec,labels,number_labels):
     eye = torch.eye(number_labels)
     eye = tensor_to_cuda(eye)
     one_hots = torch.stack([eye[label] for label in labels])
-    print(one_hots)
     b_vec = torch.cat((b_vec,one_hots),dim=1)
     return b_vec
-
-def side_to_stack(sided_tensors):
-    pass
 
 def one_hot(clas, number_classes):
     vec = torch.zeros(number_classes)

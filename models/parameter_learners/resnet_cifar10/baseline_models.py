@@ -454,7 +454,7 @@ class LayerVQVAEresC10(nn.Module):
         return {'loss': loss, 'Reconstruction_Loss':recons_loss, 'vq_loss':vq_loss}
 
     def sample(self,
-                number: int, 
+                num_samples: int, 
                 current_device: int, 
                 **kwargs) -> torch.Tensor:
         """
@@ -464,7 +464,7 @@ class LayerVQVAEresC10(nn.Module):
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        sampled_indices = torch.randint(0,self.num_embeddings,(number,self.input_size_small**2))
+        sampled_indices = torch.randint(0,self.num_embeddings,(num_samples,self.input_size_small**2))
         print(sampled_indices.shape)
         codebook_vecs = self._vq_vae._embedding(sampled_indices)
         codebook_vecs = codebook_vecs.view(-1,self.embedding_dim,
@@ -562,7 +562,7 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         return  vq_loss, recon, perplexity
 
     def sample(self,
-               number: int,
+               num_samples: int,
                current_device: int, 
                arch: int,
                layer: int,
@@ -583,7 +583,7 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         embedded_layer = embedded_layer.view(-1,self.input_size_small,
             self.input_size_small).unsqueeze(1)
 
-        sampled_indices = torch.randint(0,self.num_embeddings,(number,self.input_size_small**2))
+        sampled_indices = torch.randint(0,self.num_embeddings,(num_samples,self.input_size_small**2))
         codebook_vecs = self._vq_vae._embedding(sampled_indices)
         codebook_vecs = codebook_vecs.view(-1,self.embedding_dim,
             self.input_size_small,self.input_size_small)
