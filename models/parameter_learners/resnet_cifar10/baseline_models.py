@@ -596,5 +596,11 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
 def layerVAEresC10():
     return LayerVAEresC10(64,64,[128,256,512],1,1,8)
 
-# def layerCVAEresC10():
-#     return LayerCVAEresC10(64,64,[128,256,512],1,1,8,)
+def layerCVAEresC10():
+    return LayerCVAEresC10(64,64,[128,256,512],1,1,8,30,3)
+
+def layerVQVAEresC10():
+    return LayerVQVAEresC10(64,32,128,0.25,0.99,[256],1,1)
+
+def layerCVQVAEresC10():
+    return LayerCVQVAEresC10(64,32,128,0.25,0.99,[256],1,1,8,3,30)

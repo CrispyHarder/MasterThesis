@@ -151,11 +151,11 @@ def main():
         if args.conditional:
             model = LayerCVQVAEresC10(args.in_channels, args.embedding_dim, args.num_embeddings, 
                 args.commitment_cost, args.decay, args.hidden_dims, args.pre_interm_layers,
-                args.interm_layers, args.sqrt_number_kernels, number_archs, number_layers)
+                args.interm_layers, args.sqrt_number_kernels, number_archs, number_layers).cuda()
         else:
             model = LayerVQVAEresC10(args.in_channels, args.embedding_dim, args.num_embeddings, 
                 args.commitment_cost, args.decay, args.hidden_dims, args.pre_interm_layers,
-                args.interm_layers, args.sqrt_number_kernels)
+                args.interm_layers, args.sqrt_number_kernels).cuda()
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
