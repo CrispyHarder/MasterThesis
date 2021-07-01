@@ -592,3 +592,9 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         z = torch.cat([codebook_vecs, embedded_arch, embedded_layer],dim=1)
         samples = self.decode(z)
         return samples
+
+def layerVAEresC10():
+    return LayerVAEresC10(64,64,[128,256,512],1,1,8)
+
+# def layerCVAEresC10():
+#     return LayerCVAEresC10(64,64,[128,256,512],1,1,8,)

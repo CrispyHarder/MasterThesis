@@ -217,6 +217,9 @@ def train_epoch(train_loader, model, optimizer, epoch):
         data_time.update(time.time() - end)
 
         data = data.cuda()
+        mask = mask.cuda()
+        arch = arch.cuda()
+        layer = layer.cuda()
         optimizer.zero_grad()
         
         data_recon, input, mu, log_var = model(data, arch=arch, layer=layer)
@@ -271,6 +274,9 @@ def validation(val_loader,model):
         for i, (data, mask, arch, layer) in enumerate(val_loader):
 
             data = data.cuda()
+            mask = mask.cuda()
+            arch = arch.cuda()
+            layer = layer.cuda()
 
             # compute output
             data_recon, input, mu, log_var = model(data, arch=arch, layer=layer)

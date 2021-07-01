@@ -228,6 +228,9 @@ def train_epoch(train_loader, model, optimizer, epoch):
         data_time.update(time.time() - end)
 
         data = data.cuda()
+        mask = mask.cuda()
+        arch = arch.cuda()
+        layer = layer.cuda()
         optimizer.zero_grad()
 
         #get outputs
@@ -287,6 +290,9 @@ def validation(val_loader, model):
         for i, (data, mask, arch, layer) in enumerate(val_loader):
 
             data = data.cuda()
+            mask = mask.cuda()
+            arch = arch.cuda()
+            layer = layer.cuda()
 
             # compute output
             vq_loss, data_recon, perplexity = model(data, arch=arch, layer=layer)

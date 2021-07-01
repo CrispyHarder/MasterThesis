@@ -21,6 +21,12 @@ from models.parameter_learners.resnet_cifar10.baseline_models import (
     LayerCVQVAEresC10, 
     LayerVAEresC10, 
     LayerVQVAEresC10 )
+from models.parameter_learners.resnet_cifar10 import baseline_models
+generator_names = [name for name in baseline_models.__dict__ 
+    if name.startswith('Layer') 
+            and callable(baseline_models.__dict__[name])
+            and not name.startswith("__") ]
+
 model_names = sorted(name for name in resnet_cifar10.__dict__
     if name.islower() and not name.startswith("__")
                      and name.startswith("resnet")
@@ -39,6 +45,8 @@ parser.add_argument('-device',default="0")
 #training specifics
 parser.add_argument('--initialisation', default='standart',
                     help='how to initialize the model')
+parser.add_argument('--generator_path', default='', 
+                    help='path to the generator')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=120, type=int, metavar='N',
@@ -112,7 +120,16 @@ def main():
         # set the model, load and send to device and save its initialisation
         model = resnet_cifar10.__dict__[args.arch]()
         if not args.initialisation == 'standart':
-            pass
+            options = args.initialisation.split('_')
+            if options[0] == 'layer':
+                if options[1] == 'cond':
+                    if options [2] == 'vae':
+
+                        generator = LayerCVAEresC10(in_channels = 64, latent_dim=64, 
+                            hidden_dims= [128,256,512], pre_interm_layers = 1,
+                            interm_layers = 1 , sqrt_number_kernels = 1,
+                            number_layers=  )
+
         model.cuda()
         save_checkpoint({
             'epoch':0,
