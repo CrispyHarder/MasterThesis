@@ -150,7 +150,9 @@ def main():
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
-        save_training_hparams(args, save_dir_run)
+        save_training_hparams(args, save_dir_run,
+                                    {'number_archs':number_archs,
+                                        'number_layers':number_layers})
 
         for epoch in range (args.start_epoch, args.start_epoch+args.epochs):
             best_loss = 100000

@@ -33,7 +33,7 @@ def load_model_from_checkpoint(checkpoint_path, model_type, dataset_name):
             model.cuda()  
         return model
 
-def save_training_hparams(args,path):
+def save_training_hparams(args,path,add_hparams={}):
     save_path = os.path.join(path,'hyperparameters.json')
     unimportant_list = ['data_storage','device','workers',
     'print_freq','resume','evaluate','pretrained','half','save_dir',
@@ -42,6 +42,8 @@ def save_training_hparams(args,path):
     for arg in vars(args):
         if arg not in unimportant_list:
             dik[arg] = getattr(args, arg)
+    for key in add_hparams.keys():
+        dik[key] = add_hparams[key]
     with open(save_path,'w') as file:
         json.dump(dik,file,indent="")
 
