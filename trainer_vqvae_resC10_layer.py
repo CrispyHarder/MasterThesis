@@ -17,7 +17,7 @@ from util.saving import save_checkpoint,save_training_hparams,save_dict_values
 from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters_dataset
 
 
-default_data_storage = os.path.join('storage', 'models', 'ResNet', 'cifar10')
+default_data_storage = os.path.join('storage', 'data', 'resnet_cifar10')
 default_save_dir = os.path.join('storage', 'models', 'VQVAE', 'resnet_cifar10', 'layer')
 
 parser = argparse.ArgumentParser(description='Layerwise VQVAE for Resnets trained on CIFAR10 in pytorch')

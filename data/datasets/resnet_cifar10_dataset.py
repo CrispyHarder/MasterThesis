@@ -89,8 +89,8 @@ class Resnet_cifar10_layer_parameters_dataset(Resnet_cifar10_dataset):
                         if 'conv' in param_tensor:
                             self.paths_to_params_by_arch[i].append((path_to_params, layer_number))
                             self.length += 1
-                            self.number_layers = max(self.number_layers, layer_number)
                             layer_number += 1 
+                            self.number_layers = max(self.number_layers, layer_number)
         
         self.length_r20 = len(self.paths_to_params_by_arch[0])
         self.length_r32 = len(self.paths_to_params_by_arch[1])

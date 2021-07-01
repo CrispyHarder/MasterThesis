@@ -41,7 +41,7 @@ model_names = sorted(name for name in resnet_cifar10.__dict__
 
 print(model_names)
 
-default_data_storage = os.path.join('storage','data')
+default_data_storage = os.path.join('storage','data','cifar10')
 default_save_dir = os.path.join('storage','models','ResNet','cifar10')
 
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
@@ -131,7 +131,7 @@ def main():
             generator = baseline_models.__dict__[args.initialisation]()
             gen_state_dict = get_state_dict_from_checkpoint(args.generator_state_dict)
             generator.load_state_dict(gen_state_dict)
-            new_init = initialize_net_layerwise(model,generator,0,3,30)
+            new_init = initialize_net_layerwise(model,generator,0,3,31)
             model.load_state_dict(new_init)
 
         model.cuda()
