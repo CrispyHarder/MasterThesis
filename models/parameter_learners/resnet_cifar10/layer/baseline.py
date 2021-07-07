@@ -465,7 +465,6 @@ class LayerVQVAEresC10(nn.Module):
         :return: (Tensor)
         """
         sampled_indices = torch.randint(0,self.num_embeddings,(num_samples,self.input_size_small**2))
-        print(sampled_indices.shape)
         codebook_vecs = self._vq_vae._embedding(sampled_indices)
         codebook_vecs = codebook_vecs.view(-1,self.embedding_dim,
             self.input_size_small,self.input_size_small)

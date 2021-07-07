@@ -6,7 +6,7 @@ import numpy as np
 import os
 import re
 from util.saving import load_model_from_checkpoint# pylint: disable=import-error
-from util.inference import get_prediction_on_data # pylint: disable=import-error
+from util.models.classifiers.inference import get_prediction_on_data # pylint: disable=import-error
 from sklearn.manifold import TSNE
 
 def get_matrix_of_models(list_to_checkpoints, model_type, dataset_name, comparison_function, **kwargs):
@@ -119,7 +119,6 @@ def get_prediction_disagreement_matrix(list_to_checkpoints,model_type,dataset_na
             matrix[i,j] = value 
             matrix[j,i] = value
     return matrix
-
 
 def get_tSNE_plot(list_to_models, model_type, dataset_name, dataloader, number_predictions, perplexity, task):
     '''computes the t_SNE plot like in the Loss Landscape Paper. Goes through every 

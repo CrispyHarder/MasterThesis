@@ -1,7 +1,7 @@
 import argparse
 import os
 import time
-from util.models.initialisation import initialize_net_layerwise
+from util.models.classifiers.initialisation import initialize_net_layerwise
 
 import torch
 import torch.nn as nn
@@ -17,9 +17,8 @@ from util.saving import (
     save_training_hparams, 
     save_dict_values,
     get_state_dict_from_checkpoint)
-from util.average_meter import AverageMeter
-from util.learning_rates import MultistepMultiGammaLR
-from util.learning_rates import get_lr
+from util.training.average_meter import AverageMeter
+from util.training.learning_rates import MultistepMultiGammaLR, get_lr
 from models.ResNet import resnet_cifar10
 from models.parameter_learners.resnet_cifar10.baseline_models import (
     LayerCVAEresC10, 

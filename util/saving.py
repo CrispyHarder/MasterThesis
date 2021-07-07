@@ -2,7 +2,7 @@ import torch
 import os 
 import json
 from models.ResNet import resnet_cifar10 # pylint: disable=import-error
-
+from pathlib import PurePath
 def save_checkpoint(state, is_best=True, is_checkpoint=True, filename='checkpoint.pth.tar'):
     """
     Save the training model if it has the best val performance
@@ -51,5 +51,30 @@ def save_dict_values(dik,path, name='results'):
     save_path = os.path.join(path,name)
     with open(save_path+'.json','w') as file:
         json.dump(dik,file, indent="")
+
+def load_model_from_path(path):
+    # get basic path 
+    path_to_class = os.path.join('models','parameter_learners')
+
+    #make dicts to translate the path names to path to class
+
+    #get the modifications for the class/generator
+    path_parts = PurePath(path).parts
+    basic_model = path_parts[-5]
+    dataset = path_parts[-4]
+    wise = path_parts[-3]
+    version = path_parts[-2]
+    with open(path,'r') as file:
+        hyper_dict = json.load(file)
+    conditional = hyper_dict['conditional']
+
+    #modify the path to class
+    path_to_class = os.path.join(path_to_class,wise,version)
+    import path_to_class as 
+    
+
+    
+
+    
 
 

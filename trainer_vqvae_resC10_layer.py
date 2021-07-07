@@ -12,7 +12,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
 from models.parameter_learners.resnet_cifar10.baseline_models import LayerVQVAEresC10, LayerCVQVAEresC10
-from util.average_meter import AverageMeter
+from util.training.average_meter import AverageMeter
 from util.saving import save_checkpoint,save_training_hparams,save_dict_values
 from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters_dataset
 
