@@ -242,6 +242,10 @@ class LayerCVAEresC10(LayerVAEresC10):
         pre_interm_layers=pre_interm_layers, interm_layers=interm_layers, 
         sqrt_number_kernels=sqrt_number_kernels, **kwargs)
         
+        self.number_archs = number_archs
+        self.numer_layers = number_layers
+        self.cond_attributes = [self.number_archs,self.numer_layers]
+
         self.input_size = input_size
         self.embed_layer = nn.Linear(number_layers, input_size**2)
         self.embed_arch = nn.Linear(number_archs, input_size**2)
@@ -507,6 +511,10 @@ class LayerCVQVAEresC10(LayerVQVAEresC10):
         if hidden_dims is None:
             hidden_dims = [256]
 
+        self.number_archs = number_archs
+        self.numer_layers = number_layers
+        self.cond_attributes = [self.number_archs,self.numer_layers]
+        
         #layer to get conditional in encoding 
         self.first_layer = nn.Conv2d(in_channels+2,in_channels,kernel_size=1,padding=0)
         self.embed_layer_big = nn.Linear(number_layers, input_size**2)
