@@ -20,7 +20,7 @@ from util.saving import (
 from util.training.average_meter import AverageMeter
 from util.training.learning_rates import MultistepMultiGammaLR, get_lr
 from models.ResNet import resnet_cifar10
-from models.parameter_learners.resnet_cifar10.baseline_models import (
+from models.parameter_learners.resnet_cifar10.layer.baseline import (
     LayerCVAEresC10, 
     LayerCVQVAEresC10, 
     LayerVAEresC10, 

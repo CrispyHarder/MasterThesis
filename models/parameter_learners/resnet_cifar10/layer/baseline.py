@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules import normalization
 from models.VQ_VAE.basic_gc.vq_vae import VectorQuantizer, VectorQuantizerEMA
-from .types_ import *
+# from .types_ import *
 
 class ResidualIntermediateBlock(nn.Module):
     '''a building element to have before (encoder) or after (decoder) down/upsamplings 
