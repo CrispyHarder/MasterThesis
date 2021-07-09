@@ -17,14 +17,15 @@ def check_mean_std_generated(gen_path, number_of_samples=5):
             for sample in samples:
                 mean = torch.mean(sample)
                 std = torch.std(sample)
-                print('Sample of labels {} has a mean of {:3f.} and a std of {:3f.}'. format(
+                print('Sample of labels {} has a mean of {:.3f} and a std of {:.3f}'. format(
                         combination,mean,std))
     else: 
         samples = generator.sample(number_of_samples,torch.device('cpu'))
-        for sample in samples:
+        for i,sample in enumerate(samples):
+            print(samples[i,0,:3,:3])
             mean = torch.mean(sample)
             std = torch.std(sample)
-            print('Sample has a mean of {:3f.} and a std of {:3f.}'. format(mean,std))
+            print('Sample has a mean of {:.3f} and a std of {:.3f}'. format(mean,std))
         
         
         
