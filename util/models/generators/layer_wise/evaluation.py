@@ -3,6 +3,7 @@ import torch
 import numpy as np 
 from util.saving import load_model_from_path
 from util.data.data_reshaping import one_hot
+
 def check_mean_std_generated(gen_path, number_of_samples=5):
     generator = load_model_from_path(gen_path)
     conditional = hasattr(generator,'cond_attributes')

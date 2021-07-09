@@ -4,7 +4,7 @@ import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import re 
-from util.parameter_comparison import get_tSNE_plot, get_prediction_disagreement_matrix, get_matrix_of_models, cosine_sim_model_params
+from util.models.classifiers.parameter_comparison import get_tSNE_plot, get_prediction_disagreement_matrix, get_matrix_of_models, cosine_sim_model_params
 from util.visualisation import plot_matrix_as_heatmap,plot_tSNE_scatter 
 
 parser = argparse.ArgumentParser(description='Argparser to make experiments')
