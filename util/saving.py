@@ -84,6 +84,8 @@ def load_model_from_path(path):
         dataset = path_parts[-4]
         wise = path_parts[-3]
         version = path_parts[-2]
+        # account for baseline_conditional
+        version = version.split('_')[0]
         hp_path = os.path.join(path,'hyperparameters.json')
         with open(hp_path,'r') as file:
             hyper_dict = json.load(file)

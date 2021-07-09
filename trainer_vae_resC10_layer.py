@@ -16,6 +16,7 @@ from util.training.average_meter import AverageMeter
 from util.saving import save_checkpoint, save_training_hparams, save_dict_values
 from data.datasets.resnet_cifar10_dataset import Resnet_cifar10_layer_parameters_dataset
 
+from torch.optim.lr_scheduler import ReduceLROnPlateau, MultiStepLR
 
 default_data_storage = os.path.join('storage', 'data', 'resnet_cifar10')
 default_save_dir = os.path.join('storage','models','VAE','resnet_cifar10','layer')
@@ -47,6 +48,8 @@ parser.add_argument('-lr', '--learning_rate', default=1e-3, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--weight_kld', default=1.0 , type=float,
                     help='''the weight for the kld''')
+parser.add_argument('--lr_plateau',default=False, action='store_true',
+                    help='whether the lr should be reduced upon plateauing')
 
 # Model architecture
 parser.add_argument('--arch', default='baseline', type=str,
@@ -150,6 +153,11 @@ def main():
         # configure optimizer    
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, amsgrad=False)
 
+        if args.lr_plateau:
+            lr_scheduler = ReduceLROnPlateau(optimizer, patience=5)
+        else:
+            lr_scheduler = MultiStepLR(optimizer,[])
+
         save_training_hparams(args, save_dir_run,
                                     {'number_archs':number_archs,
                                         'number_layers':number_layers})
@@ -159,6 +167,11 @@ def main():
 
             # perform training for one epoch
             loss, recon_loss, kl_div = train_epoch(training_loader, model, optimizer, epoch)
+            
+            if args.lr_plateau:
+                lr_scheduler.step(loss) 
+            else:
+                 lr_scheduler.step()
 
             # compute on validation split
             val_loss, val_recon_loss, val_kl_div = validation(validation_loader, model)
