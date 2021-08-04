@@ -19,24 +19,19 @@ from util.saving import (
     get_state_dict_from_checkpoint)
 from util.training.average_meter import AverageMeter
 from util.training.learning_rates import MultistepMultiGammaLR, get_lr
-from models.ResNet import resnet_cifar10
-from models.parameter_learners.resnet_cifar10.layer.baseline import (
-    LayerCVAEresC10, 
-    LayerCVQVAEresC10, 
-    LayerVAEresC10, 
-    LayerVQVAEresC10 )
-from models.parameter_learners.resnet_cifar10 import baseline_models
+from models.ResNet.cifar10 import resnet
+from models.parameter_learners.resnet_cifar10.layer import baseline
 
-generator_names = [name for name in baseline_models.__dict__ 
+generator_names = [name for name in baseline.__dict__ 
     if name.startswith('layer') 
             and name.islower()
-            and callable(baseline_models.__dict__[name])
+            and callable(baseline.__dict__[name])
             and not name.startswith("__") ]
 
-model_names = sorted(name for name in resnet_cifar10.__dict__
+model_names = sorted(name for name in resnet.__dict__
     if name.islower() and not name.startswith("__")
                      and name.startswith("resnet")
-                     and callable(resnet_cifar10.__dict__[name]))
+                     and callable(resnet.__dict__[name]))
 
 print(model_names)
 
@@ -125,9 +120,9 @@ def main():
         writer = SummaryWriter(save_dir_run)
 
         # set the model, load and send to device and save its initialisation
-        model = resnet_cifar10.__dict__[args.arch]()
+        model = resnet.__dict__[args.arch]()
         if not args.initialisation == 'standart':
-            generator = baseline_models.__dict__[args.initialisation]()
+            generator = baseline.__dict__[args.initialisation]()
             gen_state_dict = get_state_dict_from_checkpoint(args.generator_state_dict)
             generator.load_state_dict(gen_state_dict)
             new_init = initialize_net_layerwise(model,generator,0,3,31)

@@ -1,5 +1,5 @@
 import torch 
-from util.data_reshaping import one_hot, side_to_stack
+from util.data.data_reshaping import one_hot, side_to_stack
 
 def initialize_net_layerwise(net, generator, arch_label=0, number_archs=100, number_layers=100):
     '''takes a network and returns a state dict for it with sampled parameters for 
