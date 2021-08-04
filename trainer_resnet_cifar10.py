@@ -16,7 +16,8 @@ from util.saving import (
     save_checkpoint, 
     save_training_hparams, 
     save_dict_values,
-    get_state_dict_from_checkpoint)
+    get_state_dict_from_checkpoint,
+    load_model_from_path)
 from util.training.average_meter import AverageMeter
 from util.training.learning_rates import MultistepMultiGammaLR, get_lr
 from models.ResNet.cifar10 import resnet
@@ -45,8 +46,7 @@ parser.add_argument('-device',default="0")
 
 #training specifics
 parser.add_argument('--initialisation', default='standart', 
-                    choices=generator_names.append('standart'),
-                    help='how to initialize the model')
+                    help='how the model is initialised, not as relevant')
 parser.add_argument('--generator_state_dict', default='', 
                     help='path to the generator to load state dict and hparams')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
@@ -122,9 +122,10 @@ def main():
         # set the model, load and send to device and save its initialisation
         model = resnet.__dict__[args.arch]()
         if not args.initialisation == 'standart':
-            generator = baseline.__dict__[args.initialisation]()
-            gen_state_dict = get_state_dict_from_checkpoint(args.generator_state_dict)
-            generator.load_state_dict(gen_state_dict)
+            generator = load_model_from_path(args.generator_state_dict)
+            # generator = baseline.__dict__[args.initialisation]()
+            # gen_state_dict = get_state_dict_from_checkpoint(args.generator_state_dict)
+            # generator.load_state_dict(gen_state_dict)
             new_init = initialize_net_layerwise(model,generator,0,3,31)
             model.load_state_dict(new_init)
 
