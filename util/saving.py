@@ -67,7 +67,7 @@ def load_model_from_path(path):
                 'layer':'Layer'
             },
             {
-                True:'c',
+                True:'C',
                 False:''
             },
             {
